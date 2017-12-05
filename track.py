@@ -176,12 +176,15 @@ def inventory(packages=False):
     list_of_odicts = []
     new_rows = []
     print("=== Printing resources with non-standard formats ===")
+    standard_formats = ['CSV','HTML','ZIP','GeoJSON','Esri REST','KML',
+        'PDF','XLSX','XLS','TXT','DOCX','JSON','XML','RTF','GIF','API']
     for p in packages:
         resources += p['resources']
         for r in p['resources']:
             new_row = extract_features(p,r)
             list_of_odicts.append(new_row)
-            if new_row['format'] in ['.csv','csv','',' ','.html','html','.xlsx','.zip','.xls',None,'None','pdf','.pdf']:
+            if new_row['format'] not in standard_formats:
+                # ['.csv','csv','',' ','.html','html','.xlsx','.zip','.xls',None,'None','pdf','.pdf']:
                 print("{}: {}".format(new_row['resource_name'],new_row['format']))
    
     merged = [] 
@@ -197,7 +200,6 @@ def inventory(packages=False):
         else: # A case where an existing record needs to be 
         # updated has been found.
             x = new_rows[new_resource_ids.index(old_id)]
-            print("old_id = {}, x['resource_id'] = {}".format(old_id, x['resource_id']))
             modified_datum = update(datum,x)
             merged.append(modified_datum)
             processed_new_ids.append(old_id)
