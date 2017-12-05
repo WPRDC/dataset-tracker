@@ -127,7 +127,7 @@ def extract_features(package,resource):
     else:
         rows = columns = None
     if 'name' not in resource:
-        resource_name = "Unnamed resource" # That's how CKAN labels such resources
+        resource_name = "Unnamed resource" # This is how CKAN labels such resources.
     else:
         resource_name = resource['name']
     r_tuples = [('resource_name',resource_name),
@@ -152,9 +152,11 @@ def update(record,x):
     modified_record = OrderedDict(record)
     last_seen = datetime.strptime(record['last_seen'],"%Y-%m-%dT%H:%M:%S.%f")
     now = datetime.now()
-    modified_record[last_seen] = now.isoformat()
+    modified_record['last_seen'] = now.isoformat()
     if last_seen.date() != now.date:
         modified_record['total_days_seen'] += 1
+
+    # Update row counts, column counts, etc.
     return modified_record
 
 def inventory(packages=False):
@@ -181,23 +183,29 @@ def inventory(packages=False):
             #    old_data.append(new_row)
             #else:
    
-    print("len(new_rows) = {}".format(len(new_rows)))
     merged = [] 
+    processed_new_ids = []
     new_rows = list_of_odicts
+    print("len(new_rows) = {}".format(len(new_rows)))
     new_resource_ids = [r['resource_id'] for r in new_rows]
     for datum in old_data:
-        if datum['resource_id'] not in new_resource_ids:
-            print("New resource: {} | {} | {}".format(datum['resource_id'],datum['resource_name'],datum['organization']))
+        old_id = datum['resource_id']
+        if old_id not in new_resource_ids:
+            print("New resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
             merged.append(datum)
         else: # A case where an existing record needs to be 
         # updated has been found.
-            x = new_rows.pop(new_resource_ids.find(datum['resource_id']))
+            x = new_rows[new_resource_ids.index(old_id)]
+            print("old_id = {}, x['resource_id'] = {}".format(old_id, x['resource_id']))
             modified_datum = update(datum,x)
             merged.append(modified_datum)
+            processed_new_ids.append(old_id)
 
-    print("len(new_rows) = {}".format(len(new_rows)))
+    print("len(processed_new_ids) = {}".format(len(processed_new_ids)))
     for new_row in new_rows:
-        merged.append(new_row)
+        if new_row['resource_id'] not in processed_new_ids:
+            # These are new resources that haven't ever been added or tracked.
+            merged.append(new_row)
                 
     store_resources_as_file(merged)
     print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(resources)))
