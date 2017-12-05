@@ -157,6 +157,10 @@ def update(record,x):
         modified_record['total_days_seen'] += 1
 
     # Update row counts, column counts, etc.
+    modified_record['rows'] = x['rows']
+    modified_record['columns'] = x['columns']
+    modified_record['size'] = x['size'] # Currently CKAN is always 
+    # returning a 'size' value of null.
     return modified_record
 
 def inventory(packages=False):
@@ -179,9 +183,6 @@ def inventory(packages=False):
             list_of_odicts.append(new_row)
             if new_row['format'] in ['.csv','csv','',' ','.html','html','.xlsx','.zip','.xls',None,'None','pdf','.pdf']:
                 print("{}: {}".format(new_row['resource_name'],new_row['format']))
-            #if new_row['resource_id'] not in old_resource_ids:
-            #    old_data.append(new_row)
-            #else:
    
     merged = [] 
     processed_new_ids = []
