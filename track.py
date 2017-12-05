@@ -7,25 +7,21 @@ from pprint import pprint
 from json import loads, dumps
 import json
 from collections import OrderedDict
-from parameters.local_parameters import SETTINGS_FILE
+from parameters.local_parameters import SETTINGS_FILE, PATH
 
 
-#def print_table(ps):
-#    template = "{{:<10.10}}  {{:<30.30}}  {}  {{:<10.10}}  {{:<12}}"
-#    fmt = template.format("{:>7.9}")
-#    print(fmt.format("", "", "Cycles", "", "Period"))
-#    print(fmt.format("Code","Description","late", "Last spun","in days"))
-#    print("=========================================================================")
-#    fmt = template.format("{:>7.1f}")
-#    for p in ps:
-#        if 'last_spun_dt' not in p or p['last_spun_dt'] is None:
-#            last_spun_date = None
-#        else:
-#            last_spun_date = datetime.strftime(p['last_spun_dt'],"%Y-%m-%d")
-#        print(fmt.format(p['code'],p['description'],
-#            p['cycles_late'], last_spun_date,
-#            p['period_in_days']))
-#    print("=========================================================================\n")
+def print_table(rs):
+    template = "{{:<6.6}}... {{:<15.15}}  {{:<10.10}}  {}  {{:<12}}"
+    fmt = template.format("{:>7.9}")
+    print(fmt.format("", "", "", "", ""))
+    print(fmt.format("id","resource","package", "publisher","rows"))
+    print("=========================================================================")
+    #fmt = template.format("{:>7.1f}")
+    for r in rs:
+        print(fmt.format(r['resource_id'],r['resource_name'],
+            r['package_name'], r['organization'],
+            r['rows']))
+    print("=========================================================================\n")
 
 def load_resources_from_file():
     resources_filepath = PATH+"/resources.json"
@@ -48,11 +44,11 @@ def load_packages_from_file():
         return []
 
 def store_resources_as_file(xs):
-    with open(path+"/resources.json",'w') as f:
+    with open(PATH+"/resources.json",'w') as f:
         f.write(dumps(xs, indent=4))
 
 def store(packages):
-    with open(path+"/packages.json",'w') as f:
+    with open(PATH+"/packages.json",'w') as f:
         f.write(dumps(packages, indent=4))
 
 def query_resource(site,query,API_key=None):
@@ -93,8 +89,48 @@ def load_resource_archive(site,API_key):
     data = query_resource(site,  'SELECT * FROM "{}"'.format(rarid), API_key)
     return data
 
+def get_number_of_rows(site,resource_id,API_key=None):
+# On other/later versions of CKAN it would make sense to use
+# the datastore_info API endpoint here, but that endpoint is
+# broken on WPRDC.org.
+    try:
+        ckan = ckanapi.RemoteCKAN(site, apikey=API_key)
+        results_dict = ckan.action.datastore_search(resource_id=resource_id,limit=1) # The limit
+        # must be greater than zero for this query to get the 'total' field to appear in
+        # the API response.
+        count = results_dict['total']
+    except:
+        return None
+
+    return count
+
+def get_schema(site,resource_id,API_key=None):
+    # In principle, it should be possible to do this using the datastore_info
+    # endpoint instead and taking the 'schema' part of the result.
+    try:
+        ckan = ckanapi.RemoteCKAN(site, apikey=API_key)
+        results_dict = ckan.action.datastore_search(resource_id=resource_id,limit=0)
+        schema = results_dict['fields']
+    except:
+        return None
+
+    return schema
+
 def extract_features(package,resource):
-    r_tuples = [('resource_name',resource['name']),
+    if resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
+        rows = get_number_of_rows(site,resource['id'],API_key)
+        schema = get_schema(site,resource['id'],API_key)
+        if schema is None:
+            columns = None
+        else:
+            columns = len(schema)
+    else:
+        rows = columns = None
+    if 'name' not in resource:
+        resource_name = "Unnamed resource" # That's how CKAN labels such resources
+    else:
+        resource_name = resource['name']
+    r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
         ('package_name',package['title']),
         ('package_id',resource['package_id']),
@@ -102,7 +138,11 @@ def extract_features(package,resource):
         ('first_published',None),
         ('first_seen',datetime.now().isoformat()),
         ('last_seen',datetime.now().isoformat()),
-        ('total_days_seen',1)]
+        ('total_days_seen',1),
+        ('rows',rows),
+        ('columns',columns),
+        ('size',resource['size']),
+        ('format',resource['format'])]
 
     return OrderedDict(r_tuples)
 
@@ -118,7 +158,8 @@ def update(record,x):
     return modified_record
 
 def inventory(packages=False):
-    ckan = ckanapi.RemoteCKAN(site)
+    ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
+    # the next line will only return non-private packages.
     packages = ckan.action.current_package_list_with_resources(limit=999999) 
     # This is a list of all the packages with all the resources nested inside and all the current information.
    
@@ -128,11 +169,14 @@ def inventory(packages=False):
     resources = []
     list_of_odicts = []
     new_rows = []
+    print("=== Printing resources with non-standard formats ===")
     for p in packages:
         resources += p['resources']
         for r in p['resources']:
             new_row = extract_features(p,r)
             list_of_odicts.append(new_row)
+            if new_row['format'] in ['.csv','csv','',' ','.html','html','.xlsx','.zip','.xls',None,'None','pdf','.pdf']:
+                print("{}: {}".format(new_row['resource_name'],new_row['format']))
             #if new_row['resource_id'] not in old_resource_ids:
             #    old_data.append(new_row)
             #else:
@@ -143,6 +187,7 @@ def inventory(packages=False):
     new_resource_ids = [r['resource_id'] for r in new_rows]
     for datum in old_data:
         if datum['resource_id'] not in new_resource_ids:
+            print("New resource: {} | {} | {}".format(datum['resource_id'],datum['resource_name'],datum['organization']))
             merged.append(datum)
         else: # A case where an existing record needs to be 
         # updated has been found.
