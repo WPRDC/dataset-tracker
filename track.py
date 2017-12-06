@@ -156,7 +156,7 @@ def update(record,x):
     last_seen = datetime.strptime(record['last_seen'],"%Y-%m-%dT%H:%M:%S.%f")
     now = datetime.now()
     modified_record['last_seen'] = now.isoformat()
-    if last_seen.date() != now.date:
+    if last_seen.date() != now.date():
         print("last_seen = {}, now = {}".format(last_seen,now))
         modified_record['total_days_seen'] += 1
 
