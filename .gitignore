@@ -1,4 +1,6 @@
 *.swp
 *.json
+*.csv
+*.log
 parameters/
 TODO
