@@ -35,18 +35,20 @@ def print_table(rs):
             r['rows']))
     print("=========================================================================\n")
 
+def get_resources_filepath(server):
+    return "{}/{}-resources.json".format(PATH,server)
+
 def load_resources_from_file(server):
-    resources_filepath = "{}/{}-resources.json".format(PATH,server)
+    resources_filepath = get_resources_filepath(server)
     if os.path.exists(resources_filepath):
         with open(resources_filepath,'r') as f:
-        #    pprint(f.read())
             resources = loads(f.read())
         return resources
     else:
         return []
 
 def store_resources_as_file(rs,server):
-    resources_filepath = "{}/{}-resources.json".format(PATH,server)
+    resources_filepath = get_resources_filepath(server)
     with open(resources_filepath,'w') as f:
         f.write(dumps(rs, indent=4))
 
@@ -311,9 +313,9 @@ def upload():
     print("Preparing to pipe data from {} to resource {} package ID {} on {}".format(target,list(kwargs.values())[0],package_id,site))
     time.sleep(1.0)
 
-    shoving_method = 'upsert'
+    piping_method = 'upsert'
 
-    pipeline = pl.Pipeline('tracking_pipeline',
+    t_pipeline = pl.Pipeline('tracking_pipeline',
                               'Tracking Pipeline',
                               log_status=False,
                               settings_file=SETTINGS_FILE,
@@ -329,41 +331,9 @@ def upload():
               #resource_id=resource_id,
               #resource_name=resource_name,
               key_fields=['resource_id'],
-              method='upsert',
+              method=piping_method,
               **kwargs).run()
-
-
-    #s_pipeline = pl.Pipeline('resource_tracking_pipeline',
-    #                                      'Resource-Tracking Pipeline',
-    #                                      settings_file=SETTINGS_FILE,
-    #                                      log_status=False) \
-    #    .connect(pl.FileConnector, target) \
-    #    .extract(pl.CSVExtractor, firtsline_headers=True) \
-    #    .schema(schema) \
-    #    .load(pl.CKANDatastoreLoader, server,
-    #          fields=fields_to_publish,
-    #          key_fields=['resource_id'],
-    #          method=shoving_method,
-    #          **kwargs).run()
-
-    #r_pipeline = pl.Pipeline('resource_tracking_pipeline',
-    #                      'Pipeline for the Tracking of CKAN Resources',
-    #                      log_status=False,
-    #                      settings_file=SETTINGS_FILE,
-    #                      settings_from_file=True,
-    #                      start_from_chunk=0
-    #                      ) 
-    #r_pipeline = r_pipeline.connect(pl.FileConnector, target, encoding='utf-8') \
-    #            .extract(pl.CSVExtractor, firstline_headers=True) \
-    #            .schema(schema) \
-    #            .load(pl.CKANDatastoreLoader, server,
-    #                  fields=fields_to_publish,
-    #                  #package_id=package_id,
-    #                  #resource_id=resource_id,
-    #                  #resource_name=resource_name,
-    #                  key_fields=['resource_id'],
-    #                  method='upsert',
-    #                  **kwargs).run()
+    
     log = open('uploaded.log', 'w+')
     if specify_resource_by_name:
         print("Piped data to {} on {} ({}).".format(kwargs['resource_name'],site,server))
