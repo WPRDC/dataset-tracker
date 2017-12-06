@@ -27,6 +27,8 @@ class ResourceTrackingSchema(pl.BaseSchema):
     package_id = fields.String(allow_none=False)
     package_name = fields.String(allow_none=False)
     organization =  fields.String(allow_none=False)
+    #resource_url = fields.String(allow_none=False)
+    #package_url = fields.String(allow_none=False)
     first_published = fields.DateTime(allow_none=True)
     first_seen = fields.DateTime(default=datetime.now().isoformat())
     last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
@@ -81,8 +83,8 @@ def print_table(rs):
             r['rows']))
     print("=========================================================================\n")
 
-def load_resources_from_file():
-    resources_filepath = PATH+"/resources.json"
+def load_resources_from_file(server):
+    resources_filepath = "{}/{}-resources.json".format(PATH,server)
     if os.path.exists(resources_filepath):
         with open(resources_filepath,'r') as f:
         #    pprint(f.read())
@@ -91,16 +93,13 @@ def load_resources_from_file():
     else:
         return []
 
-def store_resources_as_file(xs):
-    with open(PATH+"/resources.json",'w') as f:
-        f.write(dumps(xs, indent=4))
+def store_resources_as_file(rs,server):
+    resources_filepath = "{}/{}-resources.json".format(PATH,server)
+    with open(resources_filepath,'w') as f:
+        f.write(dumps(rs, indent=4))
 
-def store(packages):
-    with open(PATH+"/packages.json",'w') as f:
-        f.write(dumps(packages, indent=4))
-
-def load():
-    return load_resources_from_file()
+def load(server):
+    return load_resources_from_file(server)
 
 
 def query_resource(site,query,API_key=None):
@@ -223,7 +222,7 @@ def inventory():
     # This is a list of all the packages with all the resources nested inside and all the current information.
    
 #    old_data = load_resource_archive(site,API_key)
-    old_data = load_resources_from_file()
+    old_data = load_resources_from_file(server)
     old_resource_ids = [r['resource_id'] for r in old_data]
     resources = []
     list_of_odicts = []
@@ -263,7 +262,7 @@ def inventory():
             # These are new resources that haven't ever been added or tracked.
             merged.append(new_row)
                 
-    store_resources_as_file(merged)
+    store_resources_as_file(merged,server)
     print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(resources)))
     return merged
 
@@ -375,7 +374,7 @@ def upload():
     log.close()
 
 #def edit(resource_id=None):
-#    resources = load()
+#    resources = load(server)
 #    if resource_id is None:
 #        print("You have to specify the ID of an existing resource to edit.")
 #        print("Here are the current plates: {}\n".format(', '.join([p['code'] for p in plates])))
