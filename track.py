@@ -135,11 +135,17 @@ def extract_features(package,resource):
         resource_name = "Unnamed resource" # This is how CKAN labels such resources.
     else:
         resource_name = resource['name']
+    package_url_path = "/dataset/" + package['name']
+    package_url = site + "/" + package_url_path
+    resource_url_path = package_url_path + "/resource/" + resource['id']
+    resource_url = site + "/" + resource_url_path
     r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
         ('package_name',package['title']),
         ('package_id',resource['package_id']),
         ('organization',package['organization']['title']),
+        ('resource_url',resource_url),
+        ('package_url',package_url),
         ('first_published',None),
         ('first_seen',datetime.now().isoformat()),
         ('last_seen',datetime.now().isoformat()),
@@ -163,6 +169,9 @@ def update(record,x):
         modified_record['total_days_seen'] += 1
 
     # Update row counts, column counts, etc.
+    modified_record['resource_url'] = x['resource_url']
+    # The package name could easily change, so these URLs need to be updated.
+    modified_record['package_url'] = x['package_url'] 
     modified_record['rows'] = x['rows']
     modified_record['columns'] = x['columns']
     modified_record['size'] = x['size'] # Currently CKAN is always 
@@ -238,8 +247,8 @@ def upload():
         package_id = fields.String(allow_none=False)
         package_name = fields.String(allow_none=False)
         organization =  fields.String(allow_none=False)
-        #resource_url = fields.String(allow_none=False)
-        #package_url = fields.String(allow_none=False)
+        resource_url = fields.String(allow_none=False)
+        package_url = fields.String(allow_none=False)
         first_published = fields.DateTime(allow_none=True)
         first_seen = fields.DateTime(default=datetime.now().isoformat())
         last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
@@ -303,7 +312,8 @@ def upload():
             'first_seen': '2010-04-13T09:15:11.0', 'last_seen': '2010-04-13T09:15:11.0', 
             'total_days_seen': 1, 'resource_id': 'Hypertext', 
             'resource_name': 'sought it with forks', 'rows': 8, 'columns': 1502,
-            'size': None, 'format': 'TSV'}]
+            'size': None, 'format': 'TSV', 'resource_url': 'https://zombo.com',
+            'package_url': 'https://deranged.millionaire.com'}]
 
     #fields_to_publish = [{'id': 'package_id', 'type': 'text'}, {'id': 'package_name', 'type': 'text'}, {'id': 'organization', 'type': 'text'}, {'id': 'first_published', 'type': 'timestamp'}, {'id': 'first_seen', 'type': 'timestamp'}, {'id': 'last_seen', 'type': 'timestamp'}, {'id': 'total_days_seen', 'type': 'int'}, {'id': 'resource_id', 'type': 'text'}, {'id': 'resource_name', 'type': 'text'}, {'id': 'rows', 'type': 'int'}, {'id': 'columns', 'type': 'int'}, {'id': 'size', 'type': 'int'}, {'id': 'format', 'type': 'text'}]
     field_names = [x['id'] for x in fields_to_publish]
