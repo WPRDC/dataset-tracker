@@ -21,7 +21,9 @@ sys.path.insert(0, '/Users/drw/WPRDC/etl-dev/wprdc-etl') # A path that we need t
 import pipeline as pl
 
 
-class PackageTrackingSchema(pl.BaseSchema): 
+class ResourceTrackingSchema(pl.BaseSchema): 
+    resource_id = fields.String(allow_none=False)
+    resource_name = fields.String(allow_none=False)
     package_id = fields.String(allow_none=False)
     package_name = fields.String(allow_none=False)
     organization =  fields.String(allow_none=False)
@@ -29,6 +31,10 @@ class PackageTrackingSchema(pl.BaseSchema):
     first_seen = fields.DateTime(default=datetime.now().isoformat())
     last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
     total_days_seen = fields.Integer(allow_none=False)
+    rows = fields.Integer(allow_none=True)
+    columns = fields.Integer(allow_none=True)
+    size = fields.Integer(allow_none=True)
+    _format = fields.String(dump_to='format',allow_none=False)
 
     # Never let any of the key fields have None values. It's just asking for
     # multiplicity problems on upsert.
@@ -56,15 +62,6 @@ class PackageTrackingSchema(pl.BaseSchema):
         if data['resource_name'] is None:
             data['resource_name'] = "Unnamed resource"
 
-class ResourceTrackingSchema(PackageTrackingSchema):
-    resource_id = fields.String(allow_none=False)
-    resource_name = fields.String(allow_none=False)
-    rows = fields.Integer(allow_none=True)
-    columns = fields.Integer(allow_none=True)
-    size = fields.Integer(allow_none=True)
-    _format = fields.String(dump_to='format',allow_none=False)
-
-
 def write_to_csv(filename,list_of_dicts,keys):
     with open(filename, 'w') as output_file:
         dict_writer = csv.DictWriter(output_file, keys, extrasaction='ignore', lineterminator='\n')
@@ -91,16 +88,6 @@ def load_resources_from_file():
         #    pprint(f.read())
             resources = loads(f.read())
         return resources
-    else:
-        return []
-
-def load_packages_from_file():
-    packages_filepath = PATH+"/packages.json"
-    if os.path.exists(packages_filepath):
-        with open(packages_filepath,'r') as f:
-        #    pprint(f.read())
-            packages = loads(f.read())
-        return packages
     else:
         return []
 
@@ -229,7 +216,7 @@ def update(record,x):
     # returning a 'size' value of null.
     return modified_record
 
-def inventory(packages=False):
+def inventory():
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
     # the next line will only return non-private packages.
     packages = ckan.action.current_package_list_with_resources(limit=999999) 
@@ -297,9 +284,10 @@ def upload():
     print("fields_to_publish = {}".format(fields_to_publish)) 
 
     print("site = {}, package_id = {}, API_key = {}".format(site,package_id,API_key))
+    _, domain = site.split("://")
     specify_resource_by_name = True
     if specify_resource_by_name:
-        kwargs = {'resource_name': 'Tracking data on wprdc.org resources'}
+        kwargs = {'resource_name': 'Tracking data on {} resources'.format(domain)}
     #else:
         #kwargs = {'resource_id': ''}
 
@@ -307,7 +295,8 @@ def upload():
     testing = False
     if not testing:
         list_of_dicts = inventory()
-    else:
+    else: # Use the below entry for rapid testing (since it takes so long 
+          # to compile the real results.
         list_of_dicts = [{'package_id': 'Squornshellous Zeta', 'package_name': 'text', 
             'organization': 'text', 'first_published': '2010-04-13T09:15:11.0', 
             'first_seen': '2010-04-13T09:15:11.0', 'last_seen': '2010-04-13T09:15:11.0', 
