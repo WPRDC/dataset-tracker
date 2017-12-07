@@ -36,7 +36,7 @@ def print_table(rs):
     print("=========================================================================\n")
 
 def get_resources_filepath(server):
-    return "{}/{}-resources.json".format(PATH,server)
+    return "{}/resources-{}.json".format(PATH,server)
 
 def load_resources_from_file(server):
     resources_filepath = get_resources_filepath(server)
