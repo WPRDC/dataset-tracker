@@ -52,6 +52,9 @@ def store_resources_as_file(rs,server):
     with open(resources_filepath,'w') as f:
         f.write(dumps(rs, indent=4))
 
+def store(rs,server):
+    return store_resources_as_file(rs,server)
+
 def load(server):
     return load_resources_from_file(server)
 
@@ -353,37 +356,48 @@ def upload():
         log.write("Finished upserting {}\n".format(kwargs['resource_id']))
     log.close()
 
-#def edit(resource_id=None):
-#    resources = load(server)
-#    if resource_id is None:
-#        print("You have to specify the ID of an existing resource to edit.")
-#        print("Here are the current plates: {}\n".format(', '.join([p['code'] for p in plates])))
-#        code = prompt_for('Enter the code')
-#    codes = [p['code'] for p in plates]
-#    while code not in codes:
-#        print("There's no plate under that code. Try again.")
-#        print("Here are the current plates: {}\n".format(', '.join([p['code'] for p in plates])))
-#        code = prompt_for('Enter the code of the plate you want to edit')
+def prompt_for(input_field):
+    try:
+        text = raw_input(input_field+": ")  # Python 2
+    except:
+        text = input(input_field+": ")  # Python 3
+    return text
+
+def prompt_to_edit_field(d, base_prompt, field):
+    new_value = prompt_for('{} ({})'.format(base_prompt, d[field]))
+    if new_value == '':
+        return d[field]
+    else:
+        return new_value
+
+def edit(resource_id=None):
+    resources = load(server)
+    if resource_id is None:
+        print("You have to specify the ID of an existing resource to edit.")
+        resource_id = prompt_for('Enter the resource ID')
+    ids = [r['resource_id'] for r in resources]
+    while resource_id not in ids:
+        print("There's no resource under that ID. Try again.")
+        code = prompt_for('Enter the ID of the resource you want to edit')
+
+    index = ids.index(resource_id)
+    r = resources[index]
+#    r['first_published'] = prompt_to_edit_field(r,'First published','first_published')
+#    r['period_in_days'] = float(prompt_to_edit_field(p,'Period in days','period_in_days'))
 #
-#    index = codes.index(code)
-#    p = plates[index]
-#    p['description'] = prompt_to_edit_field(p,'Description','description')
-#    p['period_in_days'] = float(prompt_to_edit_field(p,'Period in days','period_in_days'))
-#
-#    base_prompt = "Last spun [YYYY-MM-DD | 'now' | 'None' for never]"
-#    field = 'last_spun'
-#    last_spun = prompt_for('{} ({})'.format(base_prompt, p[field]))
-#    if last_spun != '':
-#        if last_spun == 'None':
-#            p['last_spun'] = None
-#        elif last_spun == 'now':
-#            p['last_spun'] = datetime.strftime(datetime.now(),"%Y-%m-%dT%H:%M:%S.%f")
-#        else:
-#            p['last_spun'] = datetime.strftime(datetime.strptime(last_spun,"%Y-%m-%d"), "%Y-%m-%dT%H:%M:%S.%f")
-#    # plates has now been updated since p points to the corresponding element in plates.
-#    store(plates)
-#    print('"{}" has been edited.'.format(p['description']))
-#    check()
+    base_prompt = "First published [YYYY-MM-DD | 'now' | 'None' for never]"
+    field = 'first_published'
+    first_published = prompt_for('{} ({})'.format(base_prompt, r[field]))
+    if first_published != '':
+        if first_published == 'None':
+            r['first_published'] = None
+        elif first_published == 'now':
+            r['first_published'] = datetime.strftime(datetime.now(),"%Y-%m-%dT%H:%M:%S.%f")
+        else:
+            r['first_published'] = datetime.strftime(datetime.strptime(first_published,"%Y-%m-%d"), "%Y-%m-%dT%H:%M:%S.%f")
+    # resources has now been updated since r points to the corresponding element in resources.
+    store(resources,server)
+    print('"{}" has been edited.'.format(r['resource_id']))
 
 server = "test-production"
 #server = "sandbox"
