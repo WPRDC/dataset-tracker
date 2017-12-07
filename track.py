@@ -231,6 +231,9 @@ def inventory():
                 
     store_resources_as_file(merged,server)
     print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(resources)))
+    field_names = new_rows[0].keys()
+    target = PATH + "/resources.csv"
+    write_to_csv(target,merged,field_names)
     return merged
 
     #wobbly_ps_sorted = sorted(wobbly_plates, 
