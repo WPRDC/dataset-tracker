@@ -139,9 +139,9 @@ def extract_features(package,resource):
     else:
         resource_name = resource['name']
     package_url_path = "/dataset/" + package['name']
-    package_url = site + "/" + package_url_path
+    package_url = site + package_url_path
     resource_url_path = package_url_path + "/resource/" + resource['id']
-    resource_url = site + "/" + resource_url_path
+    resource_url = site + resource_url_path
     r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
         ('package_name',package['title']),
