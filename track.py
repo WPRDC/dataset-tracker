@@ -260,7 +260,7 @@ def upload():
         first_published = fields.DateTime(allow_none=True)
         first_seen = fields.DateTime(default=datetime.now().isoformat())
         last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
-        total_days_seen = fields.Integer(allow_none=False)
+        total_days_seen = fields.Integer(allow_none=True)
         rows = fields.Integer(allow_none=True)
         columns = fields.Integer(allow_none=True)
         size = fields.Integer(allow_none=True)
@@ -376,6 +376,40 @@ def prompt_to_edit_field(d, base_prompt, field):
     else:
         return new_value
 
+def add_datestamp(d,field_name):
+    datestamp = prompt_for("{} [YYYY-MM-DD | Enter for now | 'None' for never]".format(field_name))
+    if datestamp == 'None':
+        d[field_name] = None
+    elif datestamp == '':
+        d[field_name] = datetime.strftime(datetime.now(),"%Y-%m-%dT%H:%M:%S.%f")
+    else:
+        d[field_name] = datetime.strftime(datetime.strptime(datestamp,"%Y-%m-%d"), "%Y-%m-%dT%H:%M:%S.%f")
+    return d
+
+def add(resource_id=None):
+    resources = load(server)
+    d = {'resource_id': resource_id}
+    if resource_id is None:
+        d['resource_id'] = prompt_for('Resource ID')
+
+    if d['resource_id'] in [r['resource_id'] for r in resources]:
+        print("There's already a resource under that ID. Try \n     > python track.py edit {}".format(d['resource_id']))
+        return
+
+    #d = add_datestamp(d,field_name)
+    d['resource_name'] = prompt_for('resource_name')
+    d['package_id'] = prompt_for('package_id')
+    d['package_name'] = prompt_for('package_name')
+    d['organization'] = prompt_for('organization')
+    d['resource_url'] = prompt_for('resource_url')
+    d['package_url'] = prompt_for('package_url')
+    d['format'] = prompt_for('format')
+    d['comments'] = 'Manually added'
+
+    resources = [d] + resources
+    store(resources,server)
+    print('"{}" was added to the resources being tracked.'.format(d['resource_name']))
+
 def edit(resource_id=None):
     resources = load(server)
     if resource_id is None:
@@ -384,7 +418,7 @@ def edit(resource_id=None):
     ids = [r['resource_id'] for r in resources]
     while resource_id not in ids:
         print("There's no resource under that ID. Try again.")
-        code = prompt_for('Enter the ID of the resource you want to edit')
+        resource_id = prompt_for('Enter the ID of the resource you want to edit')
 
     index = ids.index(resource_id)
     r = resources[index]
