@@ -149,6 +149,7 @@ def extract_features(package,resource):
         ('organization',package['organization']['title']),
         ('resource_url',resource_url),
         ('package_url',package_url),
+        ('created',resource['created']),
         ('first_published',None),
         ('first_seen',datetime.now().isoformat()),
         ('last_seen',datetime.now().isoformat()),
@@ -163,6 +164,7 @@ def extract_features(package,resource):
 def update(record,x):
     assert record['resource_id'] == x['resource_id']
     assert record['package_id'] == x['package_id']
+    assert record['created'] == x['created']
     modified_record = OrderedDict(record)
     last_seen = datetime.strptime(record['last_seen'],"%Y-%m-%dT%H:%M:%S.%f")
     now = datetime.now()
@@ -192,7 +194,6 @@ def inventory():
     old_resource_ids = [r['resource_id'] for r in old_data]
     resources = []
     list_of_odicts = []
-    new_rows = []
     print("=== Printing resources with non-standard formats ===")
     standard_formats = ['CSV','HTML','ZIP','GeoJSON','Esri REST','KML',
         'PDF','XLSX','XLS','TXT','DOCX','JSON','XML','RTF','GIF','API']
@@ -252,6 +253,7 @@ def upload():
         organization =  fields.String(allow_none=False)
         resource_url = fields.String(allow_none=False)
         package_url = fields.String(allow_none=False)
+        created = fields.DateTime(allow_none=True)
         first_published = fields.DateTime(allow_none=True)
         first_seen = fields.DateTime(default=datetime.now().isoformat())
         last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
@@ -311,7 +313,8 @@ def upload():
     else: # Use the below entry for rapid testing (since it takes so long 
           # to compile the real results.
         list_of_dicts = [{'package_id': 'Squornshellous Zeta', 'package_name': 'text', 
-            'organization': 'text', 'first_published': '2010-04-13T09:15:11.0', 
+            'organization': 'text', 'created': '2000-01-10T11:01:10.101010',
+            'first_published': '2010-04-13T09:15:11.0', 
             'first_seen': '2010-04-13T09:15:11.0', 'last_seen': '2010-04-13T09:15:11.0', 
             'total_days_seen': 1, 'resource_id': 'Hypertext', 
             'resource_name': 'sought it with forks', 'rows': 8, 'columns': 1502,
