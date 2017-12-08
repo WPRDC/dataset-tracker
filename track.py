@@ -258,7 +258,7 @@ def upload():
         package_url = fields.String(allow_none=False)
         created = fields.DateTime(allow_none=True)
         first_published = fields.DateTime(allow_none=True)
-        first_seen = fields.DateTime(default=datetime.now().isoformat())
+        first_seen = fields.DateTime(default=datetime.now().isoformat(),allow_none=True)
         last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
         total_days_seen = fields.Integer(allow_none=True)
         rows = fields.Integer(allow_none=True)
