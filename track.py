@@ -89,12 +89,12 @@ def query_resource(site,query,API_key=None):
     return data
 
 def load_resource(site,resource_id,API_key):
-    data = query_resource(site,  'SELECT * FROM "{}"'.format(resource_id), API_key)
+    data = query_resource(site, 'SELECT * FROM "{}"'.format(resource_id), API_key)
     return data
 
 def load_resource_archive(site,API_key):
     rarid = resource_archive_resource_id = "fill-this-in"
-    data = query_resource(site,  'SELECT * FROM "{}"'.format(rarid), API_key)
+    data = query_resource(site, 'SELECT * FROM "{}"'.format(rarid), API_key)
     return data
 
 def get_number_of_rows(site,resource_id,API_key=None):
@@ -124,6 +124,13 @@ def get_schema(site,resource_id,API_key=None):
 
     return schema
 
+def stringify_groups(p):
+    groups_string = ''
+    if 'groups' in p:
+        groups = p['groups']
+        groups_string = '|'.join(set([g['title'] for g in groups]))
+    return groups_string
+
 def extract_features(package,resource):
     if resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
         rows = get_number_of_rows(site,resource['id'],API_key)
@@ -142,6 +149,8 @@ def extract_features(package,resource):
     package_url = site + package_url_path
     resource_url_path = package_url_path + "/resource/" + resource['id']
     resource_url = site + resource_url_path
+
+    groups_string = stringify_groups(package)
     r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
         ('package_name',package['title']),
@@ -157,7 +166,8 @@ def extract_features(package,resource):
         ('rows',rows),
         ('columns',columns),
         ('size',resource['size']),
-        ('format',resource['format'])]
+        ('format',resource['format']),
+        ('groups',groups_string)]
 
     return OrderedDict(r_tuples)
 
@@ -170,7 +180,6 @@ def update(record,x):
     now = datetime.now()
     modified_record['last_seen'] = now.isoformat()
     if last_seen.date() != now.date():
-        print("last_seen = {}, now = {}".format(last_seen,now))
         modified_record['total_days_seen'] += 1
 
     # Update row counts, column counts, etc.
@@ -181,6 +190,8 @@ def update(record,x):
     modified_record['columns'] = x['columns']
     modified_record['size'] = x['size'] # Currently CKAN is always 
     # returning a 'size' value of null.
+    modified_record['format'] = x['format']
+    modified_record['groups'] = x['groups']
     return modified_record
 
 def inventory():
@@ -214,7 +225,7 @@ def inventory():
     for datum in old_data:
         old_id = datum['resource_id']
         if old_id not in new_resource_ids:
-            print("New resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
+            print("Adding the following resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
             merged.append(datum)
         else: # A case where an existing record needs to be 
         # updated has been found.
@@ -322,7 +333,7 @@ def upload():
             'total_days_seen': 1, 'resource_id': 'Hypertext', 
             'resource_name': 'sought it with forks', 'rows': 8, 'columns': 1502,
             'size': None, 'format': 'TSV', 'resource_url': 'https://zombo.com',
-            'package_url': 'https://deranged.millionaire.com'}]
+            'package_url': 'https://deranged.millionaire.com', 'groups': 'Limbo'}]
 
     #fields_to_publish = [{'id': 'package_id', 'type': 'text'}, {'id': 'package_name', 'type': 'text'}, {'id': 'organization', 'type': 'text'}, {'id': 'first_published', 'type': 'timestamp'}, {'id': 'first_seen', 'type': 'timestamp'}, {'id': 'last_seen', 'type': 'timestamp'}, {'id': 'total_days_seen', 'type': 'int'}, {'id': 'resource_id', 'type': 'text'}, {'id': 'resource_name', 'type': 'text'}, {'id': 'rows', 'type': 'int'}, {'id': 'columns', 'type': 'int'}, {'id': 'size', 'type': 'int'}, {'id': 'format', 'type': 'text'}]
     field_names = [x['id'] for x in fields_to_publish]
