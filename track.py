@@ -7,6 +7,7 @@ from json import loads, dumps
 import json
 from collections import OrderedDict
 from parameters.local_parameters import SETTINGS_FILE, PATH
+from notify import send_to_slack
 
 #abspath = os.path.abspath(__file__)
 #dname = os.path.dirname(abspath)
@@ -238,7 +239,9 @@ def inventory():
     for new_row in new_rows:
         if new_row['resource_id'] not in processed_new_ids:
             # These are new resources that haven't ever been added or tracked.
-            print("Found an entirely new resource: {} | {} | {}".format(new_row['resource_id'],new_row['resource_name'],new_row['organization']))
+            msg = "dataset-tracker found an entirely new resource: <{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
+            print(msg)
+            send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
             merged.append(new_row)
                 
     store_resources_as_file(merged,server)
