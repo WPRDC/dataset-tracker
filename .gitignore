@@ -4,3 +4,4 @@
 *.log
 parameters/
 TODO
+__pycache__/
