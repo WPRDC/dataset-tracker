@@ -225,7 +225,7 @@ def inventory():
     for datum in old_data:
         old_id = datum['resource_id']
         if old_id not in new_resource_ids:
-            print("Adding the following resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
+            #print("Adding the following resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
             merged.append(datum)
         else: # A case where an existing record needs to be 
         # updated has been found.
@@ -238,6 +238,7 @@ def inventory():
     for new_row in new_rows:
         if new_row['resource_id'] not in processed_new_ids:
             # These are new resources that haven't ever been added or tracked.
+            print("Found an entirely new resource: {} | {} | {}".format(new_row['resource_id'],new_row['resource_name'],new_row['organization']))
             merged.append(new_row)
                 
     store_resources_as_file(merged,server)
