@@ -236,14 +236,24 @@ def inventory():
             processed_new_ids.append(old_id)
 
     print("len(processed_new_ids) = {}".format(len(processed_new_ids)))
+    brand_new = []
     for new_row in new_rows:
         if new_row['resource_id'] not in processed_new_ids:
             # These are new resources that haven't ever been added or tracked.
-            msg = "dataset-tracker found an entirely new resource: <{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
+            item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
+            brand_new.append(item)
+            msg = "dataset-tracker found an entirely new resource: " + item
             print(msg)
-            send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
             merged.append(new_row)
                 
+    if len(brand_new) > 0:
+        if len(brand_new) == 1:
+            msg = "dataset-tracker found an entirely new resource: " + brand_new[0]
+        else:
+            msg = "dataset-tracker found these entirely new resources: " 
+            msg += ', '.join(brand_new)
+        send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
+
     store_resources_as_file(merged,server)
     print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(resources)))
     field_names = new_rows[0].keys()
