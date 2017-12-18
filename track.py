@@ -241,8 +241,9 @@ def inventory():
         if new_row['resource_id'] not in processed_new_ids:
             # These are new resources that haven't ever been added or tracked.
             item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
+            printable = "{} ({}) in {} from {}".format(new_row['resource_name'],new_row['resource_url'],new_row['package_name'],new_row['organization'])
             brand_new.append(item)
-            msg = "dataset-tracker found an entirely new resource: " + item
+            msg = "dataset-tracker found an entirely new resource: " + printable_item
             print(msg)
             merged.append(new_row)
                 
