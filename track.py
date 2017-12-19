@@ -150,6 +150,7 @@ def extract_features(package,resource):
     package_url = site + package_url_path
     resource_url_path = package_url_path + "/resource/" + resource['id']
     resource_url = site + resource_url_path
+    download_url = resource['url'] if 'url' in resource else None
 
     groups_string = stringify_groups(package)
     r_tuples = [('resource_name',resource_name),
@@ -159,6 +160,7 @@ def extract_features(package,resource):
         ('organization',package['organization']['title']),
         ('resource_url',resource_url),
         ('package_url',package_url),
+        ('download_url',download_url),
         ('created',resource['created']),
         ('first_published',None),
         ('first_seen',datetime.now().isoformat()),
@@ -187,6 +189,7 @@ def update(record,x):
     modified_record['resource_url'] = x['resource_url']
     # The package name could easily change, so these URLs need to be updated.
     modified_record['package_url'] = x['package_url'] 
+    modified_record['download_url'] = x['download_url'] 
     modified_record['rows'] = x['rows']
     modified_record['columns'] = x['columns']
     modified_record['size'] = x['size'] # Currently CKAN is always 
@@ -243,7 +246,7 @@ def inventory():
             item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
             printable = "{} ({}) in {} from {}".format(new_row['resource_name'],new_row['resource_url'],new_row['package_name'],new_row['organization'])
             brand_new.append(item)
-            msg = "dataset-tracker found an entirely new resource: " + printable_item
+            msg = "dataset-tracker found an entirely new resource: " + printable
             print(msg)
             merged.append(new_row)
                 
@@ -282,6 +285,7 @@ def upload():
         organization =  fields.String(allow_none=False)
         resource_url = fields.String(allow_none=False)
         package_url = fields.String(allow_none=False)
+        download_url = fields.String(allow_none=True) # 'url' parameter of the resource.
         created = fields.DateTime(allow_none=True)
         first_published = fields.DateTime(allow_none=True)
         first_seen = fields.DateTime(default=datetime.now().isoformat(),allow_none=True)
