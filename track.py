@@ -189,7 +189,7 @@ def update(record,x):
     modified_record['resource_url'] = x['resource_url']
     # The package name could easily change, so these URLs need to be updated.
     modified_record['package_url'] = x['package_url'] 
-    modified_record['download_url'] = x['download_url'] 
+    modified_record['download_url'] = x['download_url']
     modified_record['rows'] = x['rows']
     modified_record['columns'] = x['columns']
     modified_record['size'] = x['size'] # Currently CKAN is always 
@@ -219,7 +219,13 @@ def inventory():
             list_of_odicts.append(new_row)
             if new_row['format'] not in standard_formats:
                 # ['.csv','csv','',' ','.html','html','.xlsx','.zip','.xls',None,'None','pdf','.pdf']:
+                if not just_printed:
+                    print("")
                 print("{}: {}".format(new_row['resource_name'],new_row['format']))
+                just_printed = True
+            else:
+                print(".", end="", flush=True)
+                just_printed = False
    
     merged = [] 
     processed_new_ids = []
