@@ -1,4 +1,5 @@
 import os, sys, csv, time, textwrap, ckanapi
+import requests
 import fire
 
 from datetime import datetime, timedelta
@@ -197,6 +198,30 @@ def update(record,x):
     modified_record['format'] = x['format']
     modified_record['groups'] = x['groups']
     return modified_record
+
+def domain(url):
+    """Take a URL and return just the domain."""
+    return url.split("://")[1].split('/')[0]
+
+def check_links(tracks=None):
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+    items = []
+    last_domain = ''
+    for r in tracks:
+        if 'download_url' in r and r['download_url'] is not None and domain(r['download_url']) != domain(site):
+            if last_domain == domain(r['download_url']):
+                time.sleep(1)
+            response = requests.get(r['download_url'])
+            last_domain = domain(r['download_url'])
+            print("   {}: {}".format(r['download_url'], response.status_code))
+            if response.status_code == 404:
+                printable = "{}: Dead link found ({}).".format(r['resource_name'],r['download_url'])
+                print(printable)
+                item = "{} ({})".format(r['resource_name'],r['download_url'])
+                items.append(item)
+    if len(items) > 0:
+        msg = "{} dead links found:" + ", ".join(items)
 
 def inventory():
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
