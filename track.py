@@ -203,23 +203,33 @@ def domain(url):
     """Take a URL and return just the domain."""
     return url.split("://")[1].split('/')[0]
 
+def print_and_format(resource_name,durl):
+    printable = "{}: Dead link found ({}).".format(resource_name,durl)
+    print(printable)
+    item = "{} ({})".format(resource_name,durl)
+    return item
+
 def check_links(tracks=None):
     if tracks is None:
         tracks = load_resources_from_file(server)
     items = []
     last_domain = ''
-    for r in tracks:
+    checked_urls = {}
+    for k,r in enumerate(tracks):
         if 'download_url' in r and r['download_url'] is not None and domain(r['download_url']) != domain(site):
-            if last_domain == domain(r['download_url']):
-                time.sleep(1)
-            response = requests.get(r['download_url'])
-            last_domain = domain(r['download_url'])
-            print("   {}: {}".format(r['download_url'], response.status_code))
-            if response.status_code == 404:
-                printable = "{}: Dead link found ({}).".format(r['resource_name'],r['download_url'])
-                print(printable)
-                item = "{} ({})".format(r['resource_name'],r['download_url'])
-                items.append(item)
+            durl = r['download_url']
+            if durl not in checked_urls.keys():
+                if last_domain == domain(durl):
+                    time.sleep(1)
+                response = requests.get(durl)
+                checked_urls[durl] = response.status_code
+                last_domain = domain(durl)
+                print("   {}: {}".format(durl, response.status_code))
+                if response.status_code == 404:
+                    items.append(print_and_format(r['resource_name'],durl))
+            elif checked_urls[durl] == 404:
+                items.append(print_and_format(r['resource_name'],durl))
+
     if len(items) > 0:
         msg = "{} dead links found:" + ", ".join(items)
 
