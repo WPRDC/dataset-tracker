@@ -216,17 +216,26 @@ def check_links(tracks=None):
     last_domain = ''
     checked_urls = {}
     for k,r in enumerate(tracks):
-        if 'download_url' in r and r['download_url'] is not None and domain(r['download_url']) != domain(site):
+        if 'download_url' in r and r['download_url'] is not None and domain(r['download_url']) != domain(site) and r['download_url'] != 'http://#':
             durl = r['download_url']
             if durl not in checked_urls.keys():
                 if last_domain == domain(durl):
-                    time.sleep(1)
-                response = requests.get(durl)
+                    time.sleep(0.1)
+                else:
+                    time.sleep(0.01)
+                response = requests.head(durl)
                 checked_urls[durl] = response.status_code
                 last_domain = domain(durl)
-                print("   {}: {}".format(durl, response.status_code))
+                if response.status_code != 200:
+                    print("   {}: {}".format(durl, response.status_code))
                 if response.status_code == 404:
                     items.append(print_and_format(r['resource_name'],durl))
+                # Other responses to consider:
+                # The HTTP 204 No Content success status response code indicates that the request has succeeded, but that the client doesn't need to go away from its current page. 
+                # The HTTP 302 Found redirect status response code indicates that the resource requested has been temporarily moved to the URL given by the Location header.
+                # The HTTP 401 Unauthorized client error status response code indicates that the request has not been applied because it lacks valid authentication credentials for the target resource.
+                # 405 Method Not Allowed (the server refuses to respond to a HEAD request.
+                # 500 Internal Server Error
             elif checked_urls[durl] == 404:
                 items.append(print_and_format(r['resource_name'],durl))
 
