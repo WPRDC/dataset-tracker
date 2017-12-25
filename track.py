@@ -151,6 +151,7 @@ def extract_features(package,resource):
     package_url = site + package_url_path
     resource_url_path = package_url_path + "/resource/" + resource['id']
     resource_url = site + resource_url_path
+    download_link_status = None
     download_url = resource['url'] if 'url' in resource else None
 
     groups_string = stringify_groups(package)
@@ -162,6 +163,7 @@ def extract_features(package,resource):
         ('resource_url',resource_url),
         ('package_url',package_url),
         ('download_url',download_url),
+        ('download_link_status',download_link_status),
         ('created',resource['created']),
         ('first_published',None),
         ('first_seen',datetime.now().isoformat()),
@@ -191,6 +193,7 @@ def update(record,x):
     # The package name could easily change, so these URLs need to be updated.
     modified_record['package_url'] = x['package_url'] 
     modified_record['download_url'] = x['download_url']
+    modified_record['download_link_status'] = x['download_link_status']
     modified_record['rows'] = x['rows']
     modified_record['columns'] = x['columns']
     modified_record['size'] = x['size'] # Currently CKAN is always 
@@ -225,6 +228,7 @@ def check_links(tracks=None):
                     time.sleep(0.01)
                 response = requests.head(durl)
                 checked_urls[durl] = response.status_code
+                r['download_link_status'] = response.status_code
                 last_domain = domain(durl)
                 if response.status_code != 200:
                     print("   {}: {}".format(durl, response.status_code))
