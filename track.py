@@ -189,6 +189,7 @@ def update(record,x):
         modified_record['total_days_seen'] += 1
 
     # Update row counts, column counts, etc.
+    modified_record['resource_name'] = x['resource_name'] # Keep resource names updated.
     modified_record['resource_url'] = x['resource_url']
     # The package name could easily change, so these URLs need to be updated.
     modified_record['package_url'] = x['package_url'] 
