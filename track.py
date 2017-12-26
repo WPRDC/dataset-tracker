@@ -19,7 +19,7 @@ from notify import send_to_slack
 #    os.makedirs(local_path)
 
 def write_to_csv(filename,list_of_dicts,keys):
-    with open(filename, 'w') as output_file:
+    with open(filename, 'w', encoding='utf-8') as output_file:
         dict_writer = csv.DictWriter(output_file, keys, extrasaction='ignore', lineterminator='\n')
         dict_writer.writeheader()
         dict_writer.writerows(list_of_dicts)
@@ -43,7 +43,7 @@ def get_resources_filepath(server):
 def load_resources_from_file(server):
     resources_filepath = get_resources_filepath(server)
     if os.path.exists(resources_filepath):
-        with open(resources_filepath,'r') as f:
+        with open(resources_filepath,'r',encoding='utf-8') as f:
             resources = loads(f.read())
         return resources
     else:
@@ -51,7 +51,7 @@ def load_resources_from_file(server):
 
 def store_resources_as_file(rs,server):
     resources_filepath = get_resources_filepath(server)
-    with open(resources_filepath,'w') as f:
+    with open(resources_filepath,'w',encoding='utf-8') as f:
         f.write(dumps(rs, indent=4))
 
 def store(rs,server):
