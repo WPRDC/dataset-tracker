@@ -154,6 +154,20 @@ def extract_features(package,resource):
     download_link_status = None
     download_url = resource['url'] if 'url' in resource else None
 
+    tag_dicts = package['tags']
+    tags = [td['name'] for td in tag_dicts]
+    if 'etl' in tags:
+        loading_method = 'etl'
+    elif 'harvested' in tags:
+        loading_method = 'harvested'
+    else:
+        r_names = [r['name'] if 'name' in r else 'Unnamed resource' for r in package['resources']]
+        if 'Esri Rest API' in r_names:
+            loading_method = 'harvested'
+        else:
+            loading_method = 'manual' # These
+            # are probably manually uploaded.
+
     groups_string = stringify_groups(package)
     r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
@@ -172,6 +186,7 @@ def extract_features(package,resource):
         ('rows',rows),
         ('columns',columns),
         ('size',resource['size']),
+        ('loading_method',loading_method),
         ('format',resource['format']),
         ('groups',groups_string)]
 
@@ -199,6 +214,7 @@ def update(record,x):
     modified_record['columns'] = x['columns']
     modified_record['size'] = x['size'] # Currently CKAN is always 
     # returning a 'size' value of null.
+    modified_record['loading_method'] = x['loading_method']
     modified_record['format'] = x['format']
     modified_record['groups'] = x['groups']
     return modified_record
