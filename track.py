@@ -229,6 +229,19 @@ def print_and_format(resource_name,durl):
     item = "{} ({})".format(resource_name,durl)
     return item
 
+def list_unnamed(tracks=None):
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+    items = []
+    for k,r in enumerate(tracks):
+        if 'resource_name' not in r or r['resource_name'] in ['Unnamed resource', '', None]:
+            print("{} in {} has no name. It's listed as being in the {} format. Here's the URL: {}".format(r['resource_id'], r['package_name'], r['format'], r['resource_url']))
+            item = "{} in {} ({})".format(r['format'],r['package_name'],r['resource_id'])
+
+    if len(items) > 0:
+        msg = "{} unnamed resources found:" + ", ".join(items)
+        print("\n"+msg)
+
 def check_links(tracks=None):
     if tracks is None:
         tracks = load_resources_from_file(server)
