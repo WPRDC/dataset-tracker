@@ -133,6 +133,15 @@ def stringify_groups(p):
         groups_string = '|'.join(set([g['title'] for g in groups]))
     return groups_string
 
+def size_estimate(resource):
+    response = requests.head(resource['url'])
+    #print("response.headers = {}".format(response.headers))
+    if 'Content-Range' in response.headers:
+        return response.headers['Content-Range']
+    else:
+        print("Unable to identify the size of the transferred file from these headers: {}".format(response.headers))
+        return resource['size']
+
 def extract_features(package,resource):
     if resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
         rows = get_number_of_rows(site,resource['id'],API_key)
@@ -168,6 +177,7 @@ def extract_features(package,resource):
             loading_method = 'manual' # These
             # are probably manually uploaded.
 
+
     groups_string = stringify_groups(package)
     r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
@@ -185,7 +195,7 @@ def extract_features(package,resource):
         ('total_days_seen',1),
         ('rows',rows),
         ('columns',columns),
-        ('size',resource['size']),
+        ('size',size_estimate(resource)),
         ('loading_method',loading_method),
         ('format',resource['format']),
         ('groups',groups_string)]
