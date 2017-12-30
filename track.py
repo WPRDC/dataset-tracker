@@ -133,6 +133,15 @@ def stringify_groups(p):
         groups_string = '|'.join(set([g['title'] for g in groups]))
     return groups_string
 
+def name_of_resource(resource):
+    if 'name' not in resource:
+        return "Unnamed resource" # This is how CKAN labels such resources.
+    else:
+        return resource['name']
+
+def download_url_of_resource(resource):
+    return resource['url'] if 'url' in resource else None
+
 def size_estimate(resource):
     response = requests.head(resource['url'])
     #print("response.headers = {}".format(response.headers))
@@ -152,16 +161,13 @@ def extract_features(package,resource):
             columns = len(schema)
     else:
         rows = columns = None
-    if 'name' not in resource:
-        resource_name = "Unnamed resource" # This is how CKAN labels such resources.
-    else:
-        resource_name = resource['name']
+    resource_name = name_of_resource(resource)
     package_url_path = "/dataset/" + package['name']
     package_url = site + package_url_path
     resource_url_path = package_url_path + "/resource/" + resource['id']
     resource_url = site + resource_url_path
     download_link_status = None
-    download_url = resource['url'] if 'url' in resource else None
+    download_url = download_url_of_resource(resource)
 
     tag_dicts = package['tags']
     tags = [td['name'] for td in tag_dicts]
