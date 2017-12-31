@@ -292,6 +292,19 @@ def check_links(tracks=None):
     if len(items) > 0:
         msg = "{} dead links found:" + ", ".join(items)
 
+def linking_code_template(datum):
+    return datum['package_id'] + ' | ' + datum['resource_name']
+
+def generate_linking_codes(old_data):
+    # Effective IDs to link together different resources that contain the same information.
+    # (There are a bunch of these because of how the CKAN harvest extension works.)
+    codes = []
+    for datum in old_data:
+        if 'loading_method' in datum and datum['loading_method'] == 'harvested':
+            linking_code = linking_code_template(datum)
+            codes.append(linking_code)
+    return list(set(codes))
+
 def inventory():
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
     # the next line will only return non-private packages.
@@ -338,17 +351,31 @@ def inventory():
             merged.append(modified_datum)
             processed_new_ids.append(old_id)
 
+    linking_codes = generate_linking_codes(old_data)
+
     print("len(processed_new_ids) = {}".format(len(processed_new_ids)))
     brand_new = []
+    reharvest_count = 0
     for new_row in new_rows:
         if new_row['resource_id'] not in processed_new_ids:
             # These are new resources that haven't ever been added or tracked.
-            item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
-            printable = "{} ({}) in {} from {}".format(new_row['resource_name'],new_row['resource_url'],new_row['package_name'],new_row['organization'])
-            brand_new.append(item)
-            msg = "dataset-tracker found an entirely new resource: " + printable
-            print(msg)
-            merged.append(new_row)
+
+            # However, harvested resources that have new resource IDs but are otherwise the same as previous resources need to be identified.
+            reharvested = False
+            if new_row['loading_method'] == 'harvested':
+                linking_code = linking_code_template(new_row)
+                if linking_code in linking_codes:
+                    reharvested = True
+
+            if reharvested:
+               reharvest_count += 1
+            else:
+                item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
+                printable = "{} ({}) in {} from {}".format(new_row['resource_name'],new_row['resource_url'],new_row['package_name'],new_row['organization'])
+                brand_new.append(item)
+                msg = "dataset-tracker found an entirely new resource: " + printable
+                print(msg)
+                merged.append(new_row)
                 
     if len(brand_new) > 0:
         if len(brand_new) == 1:
@@ -357,6 +384,11 @@ def inventory():
             msg = "dataset-tracker found these entirely new resources: " 
             msg += ', '.join(brand_new)
         send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
+
+
+    if reharvest_count > 0:
+        msg = "dataset-tracker observed that {} resources were reharvested.".format(reharvest_count)
+        send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
 
     store_resources_as_file(merged,server)
     print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(resources)))
