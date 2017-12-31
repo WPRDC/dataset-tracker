@@ -2,6 +2,7 @@
 *.json
 *.csv
 *.log
+archive/
 parameters/
 TODO
 __pycache__/
