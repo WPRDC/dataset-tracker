@@ -143,10 +143,21 @@ def download_url_of_resource(resource):
     return resource['url'] if 'url' in resource else None
 
 def size_estimate(resource):
+    if resource['format'] in ['HTML','html']:
+        r_name = name_of_resource(resource)
+        download_url = download_url_of_resource(resource)
+        #print("Not saving a file size estimate since {} ({}) appears to be a link to a web page".format(r_name,download_url))
+        return None
+    if resource['url'] == 'http://#': # Handle local convention for 
+        return None                   # disabling downloading of big 
+                                      # tables in the datastore.
     response = requests.head(resource['url'])
     #print("response.headers = {}".format(response.headers))
     if 'Content-Range' in response.headers:
-        return response.headers['Content-Range']
+        estimate = int(response.headers['Content-Range'].split('/')[1])
+        return estimate
+    elif 'Content-Length' in response.headers:
+        return int(response.headers['Content-Length'])
     else:
         print("Unable to identify the size of the transferred file from these headers: {}".format(response.headers))
         return resource['size']
