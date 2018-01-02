@@ -367,6 +367,7 @@ def inventory():
     print("len(processed_new_ids) = {}".format(len(processed_new_ids)))
     brand_new = []
     reharvest_count = 0
+    new_package_ids = []
     for new_row in new_rows:
         if new_row['resource_id'] not in processed_new_ids:
             # These are new resources that haven't ever been added or tracked.
@@ -379,20 +380,22 @@ def inventory():
                     reharvested = True
 
             if reharvested:
-               reharvest_count += 1
+                reharvest_count += 1
             else:
                 item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
                 printable = "{} ({}) in {} from {}".format(new_row['resource_name'],new_row['resource_url'],new_row['package_name'],new_row['organization'])
                 brand_new.append(item)
+                new_package_ids.append(new_row['package_id'])
                 msg = "dataset-tracker found an entirely new resource: " + printable
                 print(msg)
                 merged.append(new_row)
-                
+    
+    new_package_ids = list(set(new_package_ids))
     if len(brand_new) > 0:
         if len(brand_new) == 1:
             msg = "dataset-tracker found an entirely new resource: " + brand_new[0]
         else:
-            msg = "dataset-tracker found these entirely new resources: " 
+            msg = "In {} new packages, dataset-tracker found these {} entirely new resources: ".format(len(new_package_ids),len(brand_new))
             msg += ', '.join(brand_new)
         send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
 
