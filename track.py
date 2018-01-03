@@ -1,4 +1,4 @@
-import os, sys, csv, time, textwrap, ckanapi
+import os, sys, csv, time, textwrap, ckanapi, random
 import requests
 import fire
 
@@ -142,7 +142,7 @@ def name_of_resource(resource):
 def download_url_of_resource(resource):
     return resource['url'] if 'url' in resource else None
 
-def size_estimate(resource):
+def size_estimate(resource,old_tracks):
     if resource['format'] in ['HTML','html']:
         r_name = name_of_resource(resource)
         download_url = download_url_of_resource(resource)
@@ -153,16 +153,44 @@ def size_estimate(resource):
                                       # tables in the datastore.
     response = requests.head(resource['url'])
     #print("response.headers = {}".format(response.headers))
+    if response.status_code in [404]:
+        return None
     if 'Content-Range' in response.headers:
         estimate = int(response.headers['Content-Range'].split('/')[1])
         return estimate
     elif 'Content-Length' in response.headers:
         return int(response.headers['Content-Length'])
     else:
-        print("Unable to identify the size of the transferred file from these headers: {}".format(response.headers))
+        #print("Unable to identify the size of the transferred file from these headers: {}".format(response.headers))
+        # I believe that almost all files in this category are files that need to be dumped from datastore tables.
+
+        # Determine whether size is known from old_tracks.
+        size_is_known = False
+        for t in old_tracks:
+            if t['resource_id'] == resource['id']: # 'id', not 'resource_id' since this is still the raw CKAN response.
+                if 'size' in t and t['size'] is not None:
+                    size_is_known = True
+        if random.random() < 0.1 - 0.05*size_is_known:
+            # Actually fetch the resource and determine the file size.
+            print("Getting {} to determine its file size.".format(resource['url']))
+            r2 = requests.get(resource['url'])
+            if 'Content-Range' in r2.headers:
+                estimate = int(r2.headers['Content-Range'].split('/')[1])
+                print("   Content-Range: Determined {} to have a size of {}.".format(resource['id'],estimate))
+                return estimate
+            elif 'Content-Length' in r2.headers:
+                estimate = int(r2.headers['Content-Length'])
+                print("   Content-Length: Determined {} to have a size of {}.".format(resource['id'],estimate))
+                return estimate
+            elif 'Content-Type' in r2.headers and r2.headers['Content-Type'] == 'text/csv':
+                estimate = len(r2.text)
+                print("   len(r2.text): Determined {} to have a size of {}.".format(resource['id'],estimate))
+                return estimate
+            print("Unable to identify the size of the transferred file from the HEAD headers {} or from the GET headers".format(response.headers,r2.headers))
+
         return resource['size']
 
-def extract_features(package,resource):
+def extract_features(package,resource,old_tracks):
     if resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
         rows = get_number_of_rows(site,resource['id'],API_key)
         schema = get_schema(site,resource['id'],API_key)
@@ -212,7 +240,7 @@ def extract_features(package,resource):
         ('total_days_seen',1),
         ('rows',rows),
         ('columns',columns),
-        ('size',size_estimate(resource)),
+        ('size',size_estimate(resource,old_tracks)),
         ('loading_method',loading_method),
         ('format',resource['format']),
         ('groups',groups_string)]
@@ -239,8 +267,8 @@ def update(record,x):
     modified_record['download_link_status'] = x['download_link_status']
     modified_record['rows'] = x['rows']
     modified_record['columns'] = x['columns']
-    modified_record['size'] = x['size'] # Currently CKAN is always 
-    # returning a 'size' value of null.
+    modified_record['size'] = x['size'] if x['size'] is not None else record['size'] # Only update the
+    # 'size' field if a new value has been obtained.
     modified_record['loading_method'] = x['loading_method']
     modified_record['format'] = x['format']
     modified_record['groups'] = x['groups']
@@ -333,7 +361,7 @@ def inventory():
     for p in packages:
         resources += p['resources']
         for r in p['resources']:
-            new_row = extract_features(p,r)
+            new_row = extract_features(p,r,old_data)
             list_of_odicts.append(new_row)
             if new_row['format'] not in standard_formats:
                 # ['.csv','csv','',' ','.html','html','.xlsx','.zip','.xls',None,'None','pdf','.pdf']:
