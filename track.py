@@ -148,10 +148,19 @@ def size_estimate(resource,old_tracks):
         download_url = download_url_of_resource(resource)
         #print("Not saving a file size estimate since {} ({}) appears to be a link to a web page".format(r_name,download_url))
         return None
-    if resource['url'] == 'http://#': # Handle local convention for 
-        return None                   # disabling downloading of big 
-                                      # tables in the datastore.
-    response = requests.head(resource['url'])
+    if 'url' in resource:
+        url = resource['url']
+        resource_id = resource['id'] # 'id', not 'resource_id' 
+                  # since this is still the raw CKAN response.
+    else:
+        url = resource['download_url']
+        resource_id = resource['resource_id']
+
+    if url == 'http://#': # Handle local convention for 
+        return None       # disabling downloading of big 
+                          # tables in the datastore.
+                                          
+    response = requests.head(url)
     #print("response.headers = {}".format(response.headers))
     if response.status_code in [404]:
         return None
@@ -167,28 +176,28 @@ def size_estimate(resource,old_tracks):
         # Determine whether size is known from old_tracks.
         size_is_known = False
         for t in old_tracks:
-            if t['resource_id'] == resource['id']: # 'id', not 'resource_id' since this is still the raw CKAN response.
+            if t['resource_id'] == resource_id: 
                 if 'size' in t and t['size'] is not None:
                     size_is_known = True
         if random.random() < 0.1 - 0.05*size_is_known:
             # Actually fetch the resource and determine the file size.
-            print("Getting {} to determine its file size.".format(resource['url']))
-            r2 = requests.get(resource['url'])
+            print("Getting {} to determine its file size.".format(url))
+            r2 = requests.get(url)
             if 'Content-Range' in r2.headers:
                 estimate = int(r2.headers['Content-Range'].split('/')[1])
-                print("   Content-Range: Determined {} to have a size of {}.".format(resource['id'],estimate))
+                print("   Content-Range: Determined {} to have a size of {}.".format(resource_id,estimate))
                 return estimate
             elif 'Content-Length' in r2.headers:
                 estimate = int(r2.headers['Content-Length'])
-                print("   Content-Length: Determined {} to have a size of {}.".format(resource['id'],estimate))
+                print("   Content-Length: Determined {} to have a size of {}.".format(resource_id,estimate))
                 return estimate
             elif 'Content-Type' in r2.headers and r2.headers['Content-Type'] == 'text/csv':
                 estimate = len(r2.text)
-                print("   len(r2.text): Determined {} to have a size of {}.".format(resource['id'],estimate))
+                print("   len(r2.text): Determined {} to have a size of {}.".format(resource_id,estimate))
                 return estimate
             print("Unable to identify the size of the transferred file from the HEAD headers {} or from the GET headers".format(response.headers,r2.headers))
 
-        return resource['size']
+        return resource['size'] # I think this should work both for CKAN API response resources and tracks.
 
 def extract_features(package,resource,old_tracks):
     if resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
