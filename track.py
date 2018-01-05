@@ -306,6 +306,22 @@ def list_unnamed(tracks=None):
         msg = "{} unnamed resources found:" + ", ".join(items)
         print("\n"+msg)
 
+def check_all_unknown_sizes(tracks=None):
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+    updated_something = False
+    for k,r in enumerate(tracks):
+        if 'size' not in r or r['size'] in [None]:
+            estimate = size_estimate(r,tracks)
+            if estimate is None:
+                print("The size of {} hadn't been determined and still can't be determined. It's listed as being in the {} format. Here's the download URL: {}".format(r['resource_id'], r['format'], r['resource_url']))
+            else:
+                print("The size of {} wasn't previously determined. It's listed as being in the {} format. It looks like it's actually {}".format(r['resource_id'], r['format'], estimate))
+                updated_something = True
+    if updated_something:
+        store_resources_as_file(tracks,server)
+        print("One or more resource sizes were updated.")
+
 def check_links(tracks=None):
     if tracks is None:
         tracks = load_resources_from_file(server)
