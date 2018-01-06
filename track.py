@@ -487,10 +487,12 @@ def upload():
         resource_name = fields.String(allow_none=False)
         package_id = fields.String(allow_none=False)
         package_name = fields.String(allow_none=False)
+        linking_code = fields.String(allow_none=False)
         organization =  fields.String(allow_none=False)
         resource_url = fields.String(allow_none=False)
         package_url = fields.String(allow_none=False)
         download_url = fields.String(allow_none=True) # 'url' parameter of the resource.
+        download_link_status = fields.String(allow_none=True)
         created = fields.DateTime(allow_none=True)
         first_published = fields.DateTime(allow_none=True)
         first_seen = fields.DateTime(default=datetime.now().isoformat(),allow_none=True)
@@ -500,6 +502,9 @@ def upload():
         columns = fields.Integer(allow_none=True)
         size = fields.Integer(allow_none=True)
         _format = fields.String(dump_to='format',allow_none=False)
+        loading_method = fields.String(allow_none=True)
+        groups = fields.String(allow_none=True)
+
 
         # Never let any of the key fields have None values. It's just asking for
         # multiplicity problems on upsert.
