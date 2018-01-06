@@ -266,6 +266,7 @@ def update(record,x):
     assert record['resource_id'] == x['resource_id']
     assert record['package_id'] == x['package_id']
     assert record['created'] == x['created']
+    # The linking code is presumed to be immutable, based on how it's being defined.
     modified_record = OrderedDict(record)
     last_seen = datetime.strptime(record['last_seen'],"%Y-%m-%dT%H:%M:%S.%f")
     now = datetime.now()
@@ -276,6 +277,7 @@ def update(record,x):
     # Update row counts, column counts, etc.
     modified_record['resource_name'] = x['resource_name'] # Keep resource names updated.
     modified_record['resource_url'] = x['resource_url']
+    modified_record['linking_code'] = x['linking_code']
     # The package name could easily change, so these URLs need to be updated.
     modified_record['package_url'] = x['package_url'] 
     modified_record['download_url'] = x['download_url']
@@ -365,16 +367,30 @@ def check_links(tracks=None):
 def linking_code_template(datum):
     return datum['package_id'] + ' | ' + datum['resource_name']
 
-def generate_linking_codes(old_data):
-    # Effective IDs to link together different resources that contain the same information.
-    # (There are a bunch of these because of how the CKAN harvest extension works.)
-    codes = []
-    for datum in old_data:
-        if 'loading_method' in datum and datum['loading_method'] == 'harvested':
-            linking_code = linking_code_template(datum)
-            codes.append(linking_code)
-    return list(set(codes))
+def generate_linking_code(tracked_resource):
+    # This function generates effective IDs to link together different resources that contain 
+    # the same information. (There are a bunch of these because of how the CKAN harvest 
+    # extension works.)
 
+    # It also returns the linking code a second time if the resource is a harvested one.
+
+    if 'loading_method' in tracked_resource and tracked_resource['loading_method'] == 'harvested':
+        code = linking_code_template(tracked_resource)
+        return code, code
+    elif 'comments' not in tracked_resource or tracked_resource['comments'] != 'Manually added':
+        return tracked_resource['resource_id'], None
+    else:
+        assert 'linking_code' in tracked_resource
+        code = tracked_resource['linking_code']
+        if 'loading_method' in tracked_resource:
+            if tracked_resource['loading_method'] == 'harvested':
+                return code, code
+            else:
+                return code, None # Both of these lines might
+        return code, None # be wrong... If the loading_method is undefined
+        # or blank it might or might not be a harvested thing (if there's
+        # some old or incorrectly tagged resource in there.)
+        
 def inventory():
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
     # the next line will only return non-private packages.
@@ -389,10 +405,19 @@ def inventory():
     print("=== Printing resources with non-standard formats ===")
     standard_formats = ['CSV','HTML','ZIP','GeoJSON','Esri REST','KML',
         'PDF','XLSX','XLS','TXT','DOCX','JSON','XML','RTF','GIF','API']
+
+    list_of_odicts = []
+
+    harvest_linking_codes = []
     for p in packages:
         resources += p['resources']
         for r in p['resources']:
             new_row = extract_features(p,r,old_data)
+            linking_code, harvest_linking_code = generate_linking_code(new_row)
+            new_row['linking_code'] = linking_code
+            print("resource_name = {}, linking_code = {}".format(new_row['resource_name'],new_row['linking_code']))
+            if harvest_linking_code is not None:
+                harvest_linking_codes.append(str(harvest_linking_code))
             list_of_odicts.append(new_row)
             if new_row['format'] not in standard_formats:
                 # ['.csv','csv','',' ','.html','html','.xlsx','.zip','.xls',None,'None','pdf','.pdf']:
@@ -421,9 +446,9 @@ def inventory():
             merged.append(modified_datum)
             processed_new_ids.append(old_id)
 
-    linking_codes = generate_linking_codes(old_data)
-
+    harvest_linking_codes = list(set(harvest_linking_codes))
     print("len(processed_new_ids) = {}".format(len(processed_new_ids)))
+
     brand_new = []
     reharvest_count = 0
     new_package_ids = []
@@ -435,7 +460,7 @@ def inventory():
             reharvested = False
             if new_row['loading_method'] == 'harvested':
                 linking_code = linking_code_template(new_row)
-                if linking_code in linking_codes:
+                if linking_code in harvest_linking_codes:
                     reharvested = True
 
             if reharvested:
