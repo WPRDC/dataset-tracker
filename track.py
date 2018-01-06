@@ -220,7 +220,13 @@ def extract_features(package,resource,old_tracks):
     tag_dicts = package['tags']
     tags = [td['name'] for td in tag_dicts]
     if 'etl' in tags:
-        loading_method = 'etl'
+        # This is the package-level tag, so not every resource inside will be ETLed.
+        # For the Air Quality dataset, Excel, CSV, and PDF files all seem to be ETLed.
+        # Let's exclude data dictionaries:
+        if re.search('data dictionary',resource_name,re.IGNORECASE) is not None or resource['format'] in ['HTML','html']:
+            loading_method = 'manual'
+        else:
+            loading_method = 'etl' 
     elif 'harvested' in tags:
         loading_method = 'harvested'
     else:
