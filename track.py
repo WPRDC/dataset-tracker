@@ -1,4 +1,4 @@
-import os, sys, csv, time, textwrap, ckanapi, random
+import os, sys, re, csv, time, textwrap, ckanapi, random
 import requests
 import fire
 
