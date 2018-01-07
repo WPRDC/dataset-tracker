@@ -200,7 +200,10 @@ def size_estimate(resource,old_tracks):
         return resource['size'] # I think this should work both for CKAN API response resources and tracks.
 
 def extract_features(package,resource,old_tracks):
-    if resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
+    speedmode = False
+    if speedmode:
+        rows = columns = None
+    elif resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
         rows = get_number_of_rows(site,resource['id'],API_key)
         schema = get_schema(site,resource['id'],API_key)
         if schema is None:
@@ -255,7 +258,7 @@ def extract_features(package,resource,old_tracks):
         ('total_days_seen',1),
         ('rows',rows),
         ('columns',columns),
-        ('size',size_estimate(resource,old_tracks)),
+        ('size',None if speedmode else size_estimate(resource,old_tracks)),
         ('loading_method',loading_method),
         ('format',resource['format']),
         ('groups',groups_string)]
@@ -282,8 +285,8 @@ def update(record,x):
     modified_record['package_url'] = x['package_url'] 
     modified_record['download_url'] = x['download_url']
     modified_record['download_link_status'] = x['download_link_status']
-    modified_record['rows'] = x['rows']
-    modified_record['columns'] = x['columns']
+    modified_record['rows'] = x['rows'] if x['rows'] is not None else record['rows']
+    modified_record['columns'] = x['columns'] if x['columns'] is not None else record['columns']
     modified_record['size'] = x['size'] if x['size'] is not None else record['size'] # Only update the
     # 'size' field if a new value has been obtained.
     modified_record['loading_method'] = x['loading_method']
