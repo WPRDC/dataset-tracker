@@ -343,6 +343,48 @@ def is_harvested_package(raw_package):
         return True
     return re.search('this dataset is harvested on a weekly basis',raw_package['notes']) is not None
 
+def check_live_licenses():
+    # 1) We only care about whether active resources have licenses.
+    # 2) It's a pain to go back and deal with the inactive resources for which license information has not been tracked.
+    # 3) Maybe it's better to put such functions in pocket-watch and leave archive or crossover stuff to dataset-tracker.
+    #   *) Currently, pocket-watch is very minimalistic with no use of the fire library, so queries of the live site 
+    #      will probably stay in dataset-tracker for a while.
+
+    ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
+    # the next line will only return non-private packages.
+    packages = ckan.action.current_package_list_with_resources(limit=999999)
+
+    items = []
+    unlicensed = []
+    license_counts = defaultdict(int)
+    for k,p in enumerate(packages):
+        if 'license_title' not in p:
+            items.append("{}".format(p['title']))
+            license_counts['No license'] += 1
+            unlicensed.append(p)
+        else:
+            license_counts[p['license_title']] += 1
+            if p['license_title'] is None:
+                items.append("{}".format(p['title']))
+                unlicensed.append(p)
+
+    print("Distribution of licenses by package:")
+    pprint(dict(license_counts))
+    if len(items) > 0:
+        msg = "{} packages without licenses found: ".format(len(items), ", ".join(items))
+        print(msg)
+        # These tend to be harvested packages.
+        nonharvested = []
+        for p in unlicensed:
+            if not is_harvested_package(p):
+                nonharvested.append(p['title'])
+        if len(items) == 1:
+            msg = "This single package is particularly interesting because it is a non-harvested packages without a license: {}".format(len(nonharvested),", ".join(nonharvested))
+        else:
+            msg = "These {} packages are particularly interesting because they are non-harvested packages without licenses: {}".format(len(nonharvested),", ".join(nonharvested))
+        print(msg)
+
+
 def check_links(tracks=None):
     if tracks is None:
         tracks = load_resources_from_file(server)
