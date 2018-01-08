@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pprint import pprint
 from json import loads, dumps
 import json
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from parameters.local_parameters import SETTINGS_FILE, PATH
 from notify import send_to_slack
 
@@ -332,6 +332,16 @@ def check_all_unknown_sizes(tracks=None):
     if updated_something:
         store_resources_as_file(tracks,server)
         print("One or more resource sizes were updated.")
+
+def is_harvested_package(raw_package):
+    # Our current rule-of-thumb as to whether a package is harvested is whether it contains an
+    # 'Esri Rest API' resource. This works for two reasons: 1) We are only harvesting ESRI
+    # stuff. 2) When the harvest breaks, it tends to manage to get the first two resources
+    # (including the 'Esri Rest API' one) and break on the CSV extraction.
+    r_names = [r['name'] if 'name' in r else 'Unnamed resource' for r in raw_package['resources']]
+    if 'Esri Rest API' in r_names:
+        return True
+    return re.search('this dataset is harvested on a weekly basis',raw_package['notes']) is not None
 
 def check_links(tracks=None):
     if tracks is None:
