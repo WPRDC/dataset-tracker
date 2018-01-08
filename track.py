@@ -719,6 +719,12 @@ def add(resource_id=None):
     #d = add_datestamp(d,field_name)
     d['resource_name'] = prompt_for('resource_name')
     d['package_id'] = prompt_for('package_id')
+
+    base_prompt = "Linking code (default: {})".format(d['resource_id'])
+    linking_code = prompt_for('{}'.format(base_prompt))
+    if linking_code == '':
+        d['linking_code'] = str(d['resource_id'])
+
     d['package_name'] = prompt_for('package_name')
     d['organization'] = prompt_for('organization')
     d['resource_url'] = prompt_for('resource_url')
