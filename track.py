@@ -252,6 +252,7 @@ def extract_features(package,resource,old_tracks):
 
 
     groups_string = stringify_groups(package)
+    tags_string = stringify_field(package,'tags','name')
     r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
         ('package_name',package['title']),
@@ -271,6 +272,7 @@ def extract_features(package,resource,old_tracks):
         ('size',None if speedmode else size_estimate(resource,old_tracks)),
         ('loading_method',loading_method),
         ('format',resource['format']),
+        ('tags',tags_string),
         ('groups',groups_string)]
 
     return OrderedDict(r_tuples)
@@ -301,6 +303,7 @@ def update(record,x):
     # 'size' field if a new value has been obtained.
     modified_record['loading_method'] = x['loading_method']
     modified_record['format'] = x['format']
+    modified_record['tags'] = x['tags']
     modified_record['groups'] = x['groups']
     return modified_record
 
@@ -593,6 +596,7 @@ def upload():
         size = fields.Integer(allow_none=True)
         _format = fields.String(dump_to='format',allow_none=False)
         loading_method = fields.String(allow_none=True)
+        tags = fields.String(allow_none=True)
         groups = fields.String(allow_none=True)
 
 
