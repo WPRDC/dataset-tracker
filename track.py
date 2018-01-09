@@ -126,12 +126,15 @@ def get_schema(site,resource_id,API_key=None):
 
     return schema
 
+def stringify_field(p,field,header):
+    field_string = ''
+    if field in p:
+        xs = p[field]
+        field_string = '|'.join(set([x[header] for x in xs]))
+    return field_string
+
 def stringify_groups(p):
-    groups_string = ''
-    if 'groups' in p:
-        groups = p['groups']
-        groups_string = '|'.join(set([g['title'] for g in groups]))
-    return groups_string
+    return stringify_field(p,'groups','title')
 
 def name_of_resource(resource):
     if 'name' not in resource:
