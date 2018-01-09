@@ -204,6 +204,13 @@ def size_estimate(resource,old_tracks):
 
 def extract_features(package,resource,old_tracks):
     speedmode = False
+    old_ids = [t['resource_id'] for t in old_tracks]
+    if resource['id'] in old_ids:
+        tracked_r = old_tracks[old_ids.index(resource['id'])]
+        # If we've already looked at this resource today, use speedmode
+        # to skip over time-consuming steps.
+        if tracked_r['last_seen'][:10] == datetime.today().date().isoformat():
+            speedmode = True
     if speedmode:
         rows = columns = None
     elif resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
