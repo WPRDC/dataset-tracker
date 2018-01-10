@@ -232,7 +232,7 @@ def extract_features(package,resource,old_tracks):
 
     tag_dicts = package['tags']
     tags = [td['name'] for td in tag_dicts]
-    if 'etl' in tags:
+    if '_etl' in tags:
         # This is the package-level tag, so not every resource inside will be ETLed.
         # For the Air Quality dataset, Excel, CSV, and PDF files all seem to be ETLed.
         # Let's exclude data dictionaries:
@@ -240,7 +240,7 @@ def extract_features(package,resource,old_tracks):
             loading_method = 'manual'
         else:
             loading_method = 'etl' 
-    elif 'harvested' in tags:
+    elif '_harvested' in tags:
         loading_method = 'harvested'
     else:
         r_names = [r['name'] if 'name' in r else 'Unnamed resource' for r in package['resources']]
