@@ -413,6 +413,9 @@ def check_links(tracks=None):
                 else:
                     time.sleep(0.01)
                 response = requests.head(durl)
+                # 405 Method Not Allowed (the server refuses to respond to a HEAD request.)
+                if response.status_code == 405:
+                    response = requests.get(durl)
                 checked_urls[durl] = response.status_code
                 r['download_link_status'] = response.status_code
                 last_domain = domain(durl)
@@ -424,7 +427,7 @@ def check_links(tracks=None):
                 # The HTTP 204 No Content success status response code indicates that the request has succeeded, but that the client doesn't need to go away from its current page. 
                 # The HTTP 302 Found redirect status response code indicates that the resource requested has been temporarily moved to the URL given by the Location header.
                 # The HTTP 401 Unauthorized client error status response code indicates that the request has not been applied because it lacks valid authentication credentials for the target resource.
-                # 405 Method Not Allowed (the server refuses to respond to a HEAD request.
+
                 # 500 Internal Server Error
             elif checked_urls[durl] == 404:
                 items.append(print_and_format(r['resource_name'],durl))
