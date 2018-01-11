@@ -204,8 +204,11 @@ def size_estimate(resource,old_tracks):
 
         return resource['size'] # I think this should work both for CKAN API response resources and tracks.
 
-def extract_features(package,resource,old_tracks):
-    speedmode = False
+def extract_features(package,resource,old_tracks,speedmode=False):
+    # speedmode can be set to False by the user, but presently this
+    # can be overridden by situations like when we've seen the 
+    # resource today.
+
     old_ids = [t['resource_id'] for t in old_tracks]
     if resource['id'] in old_ids:
         tracked_r = old_tracks[old_ids.index(resource['id'])]
@@ -480,7 +483,7 @@ def generate_linking_code(tracked_resource):
         # or blank it might or might not be a harvested thing (if there's
         # some old or incorrectly tagged resource in there.)
         
-def inventory():
+def inventory(speedmode=False,return_data=False):
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
     # the next line will only return non-private packages.
     packages = ckan.action.current_package_list_with_resources(limit=999999) 
@@ -496,7 +499,7 @@ def inventory():
     for p in packages:
         resources += p['resources']
         for r in p['resources']:
-            new_row = extract_features(p,r,old_data)
+            new_row = extract_features(p,r,old_data,speedmode)
             linking_code, harvest_linking_code = generate_linking_code(new_row)
             new_row['linking_code'] = linking_code
             #print("resource_name = {}, linking_code = {}".format(new_row['resource_name'],new_row['linking_code']))
@@ -569,7 +572,8 @@ def inventory():
     field_names = new_rows[0].keys()
     target = PATH + "/resources.csv"
     write_to_csv(target,merged,field_names)
-    return merged
+    if return_data:
+        return merged
 
     #wobbly_ps_sorted = sorted(wobbly_plates, 
     #                        key=lambda u: -u['cycles_late'])
@@ -654,7 +658,7 @@ def upload():
     target = PATH + "/resources.csv"
     testing = False
     if not testing:
-        list_of_dicts = inventory()
+        list_of_dicts = inventory(False,True)
     else: # Use the below entry for rapid testing (since it takes so long 
           # to compile the real results.
         list_of_dicts = [{'package_id': 'Squornshellous Zeta', 'package_name': 'text', 
