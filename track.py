@@ -398,6 +398,22 @@ def check_live_licenses():
         print(msg)
 
 
+def check_formats(tracks=None):
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+    standard_formats = ['CSV','HTML','ZIP','GeoJSON','Esri REST','KML',
+        'PDF','XLSX','XLS','TXT','DOCX','JSON','XML','RTF','GIF','API']
+    items = []
+    for k,r in enumerate(tracks):
+        if 'format' in r:
+            if r['format'] not in standard_formats:
+                # ['.csv','csv','',' ','.html','html','.xlsx','.zip','.xls',None,'None','pdf','.pdf']:
+                items.append("{} ({})".format(r['resource_name'],r['format'] if r not in [None,''] else "<missing format>"))
+
+    if len(items) > 0:
+        msg = "{} resources with non-standard formats found: {}".format(len(items), ", ".join(items))
+        print(msg)
+
 def check_links(tracks=None):
     if tracks is None:
         tracks = load_resources_from_file(server)
@@ -473,11 +489,6 @@ def inventory():
     old_resource_ids = [r['resource_id'] for r in old_data]
     resources = []
     list_of_odicts = []
-    print("=== Printing resources with non-standard formats ===")
-    standard_formats = ['CSV','HTML','ZIP','GeoJSON','Esri REST','KML',
-        'PDF','XLSX','XLS','TXT','DOCX','JSON','XML','RTF','GIF','API']
-
-    list_of_odicts = []
 
     harvest_linking_codes = []
     for p in packages:
@@ -486,19 +497,11 @@ def inventory():
             new_row = extract_features(p,r,old_data)
             linking_code, harvest_linking_code = generate_linking_code(new_row)
             new_row['linking_code'] = linking_code
-            print("resource_name = {}, linking_code = {}".format(new_row['resource_name'],new_row['linking_code']))
+            #print("resource_name = {}, linking_code = {}".format(new_row['resource_name'],new_row['linking_code']))
             if harvest_linking_code is not None:
                 harvest_linking_codes.append(str(harvest_linking_code))
             list_of_odicts.append(new_row)
-            if new_row['format'] not in standard_formats:
-                # ['.csv','csv','',' ','.html','html','.xlsx','.zip','.xls',None,'None','pdf','.pdf']:
-                if not just_printed:
-                    print("")
-                print("{}: {}".format(new_row['resource_name'],new_row['format']))
-                just_printed = True
-            else:
-                print(".", end="", flush=True)
-                just_printed = False
+            print(".", end="", flush=True)
    
     merged = [] 
     processed_new_ids = []
