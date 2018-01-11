@@ -155,9 +155,11 @@ def size_estimate(resource,old_tracks):
         url = resource['url']
         resource_id = resource['id'] # 'id', not 'resource_id' 
                   # since this is still the raw CKAN response.
-    else:
+    elif 'download_url' in resource:
         url = resource['download_url']
         resource_id = resource['resource_id']
+    else:
+        return None
 
     if url == 'http://#': # Handle local convention for 
         return None       # disabling downloading of big 
