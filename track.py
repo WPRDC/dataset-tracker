@@ -456,6 +456,14 @@ def check_links(tracks=None):
     if len(items) > 0:
         msg = "{} dead links found:" + ", ".join(items)
 
+def check_all(tracks=None):
+    tracks = load_resources_from_file(server)
+    list_unnamed(tracks)
+    check_all_unknown_sizes(tracks)
+    check_formats(tracks)
+    check_links(tracks)
+    check_live_licenses()
+
 def linking_code_template(datum):
     return datum['package_id'] + ' | ' + datum['resource_name']
 
