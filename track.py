@@ -556,6 +556,11 @@ def inventory(speedmode=False,return_data=False):
                 item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
                 printable = "{} ({}) in {} from {}".format(new_row['resource_name'],new_row['resource_url'],new_row['package_name'],new_row['organization'])
                 brand_new.append(item)
+                if datetime.now() - datetime.strptime(new_row['created'],"%Y-%m-%dT%H:%M:%S.%f") < timedelta(days = 6):
+                    new_row['first_published'] = new_row['created'] 
+                else: # Some resources were created long ago and only recently published.
+                    new_row['first_published'] = new_row['first_seen'] 
+
                 new_package_ids.append(new_row['package_id'])
                 msg = "dataset-tracker found an entirely new resource: " + printable
                 print(msg)
