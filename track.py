@@ -450,6 +450,12 @@ def check_links(tracks=None):
                 # The HTTP 401 Unauthorized client error status response code indicates that the request has not been applied because it lacks valid authentication credentials for the target resource.
 
                 # 500 Internal Server Error
+
+                # It's also interesting to note that apparently most
+                # sites do not correctly set the last-modified value in
+                # the header responses, so it's not a good idea to try
+                # to use it unless you know that a particular site
+                # keeps it updated.
             elif checked_urls[durl] == 404:
                 items.append(print_and_format(r['resource_name'],durl))
 
