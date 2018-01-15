@@ -204,18 +204,19 @@ def size_estimate(resource,old_tracks):
 
         return resource['size'] # I think this should work both for CKAN API response resources and tracks.
 
-def extract_features(package,resource,old_tracks,speedmode=False):
+def extract_features(package,resource,old_tracks,speedmode_seed=False):
     # speedmode can be set to False by the user, but presently this
     # can be overridden by situations like when we've seen the 
     # resource today.
 
+    speedmode = bool(speedmode_seed)
     old_ids = [t['resource_id'] for t in old_tracks]
     if resource['id'] in old_ids:
         tracked_r = old_tracks[old_ids.index(resource['id'])]
         # If we've already looked at this resource today, use speedmode
         # to skip over time-consuming steps.
         if tracked_r['last_seen'][:10] == datetime.today().date().isoformat():
-            speedmode = True
+       $    speedmode = True
     if speedmode:
         rows = columns = None
     elif resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
