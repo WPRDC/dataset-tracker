@@ -204,7 +204,7 @@ def size_estimate(resource,old_tracks):
 
         return resource['size'] # I think this should work both for CKAN API response resources and tracks.
 
-def extract_features(package,resource,old_tracks,speedmode_seed=False):
+def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_override=False):
     # speedmode can be set to False by the user, but presently this
     # can be overridden by situations like when we've seen the 
     # resource today.
@@ -216,7 +216,9 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False):
         # If we've already looked at this resource today, use speedmode
         # to skip over time-consuming steps.
         if tracked_r['last_seen'][:10] == datetime.today().date().isoformat():
-       $    speedmode = True
+           speedmode = True
+    if sizing_override:
+        speedmode = False
     if speedmode:
         rows = columns = None
     elif resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
@@ -498,7 +500,7 @@ def generate_linking_code(tracked_resource):
         # or blank it might or might not be a harvested thing (if there's
         # some old or incorrectly tagged resource in there.)
         
-def inventory(speedmode=False,return_data=False):
+def inventory(speedmode=False,return_data=False,sizing_override=False):
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
     # the next line will only return non-private packages.
     packages = ckan.action.current_package_list_with_resources(limit=999999) 
@@ -514,7 +516,7 @@ def inventory(speedmode=False,return_data=False):
     for p in packages:
         resources += p['resources']
         for r in p['resources']:
-            new_row = extract_features(p,r,old_data,speedmode)
+            new_row = extract_features(p,r,old_data,speedmode,sizing_override)
             linking_code, harvest_linking_code = generate_linking_code(new_row)
             new_row['linking_code'] = linking_code
             #print("resource_name = {}, linking_code = {}".format(new_row['resource_name'],new_row['linking_code']))
@@ -600,6 +602,9 @@ def inventory(speedmode=False,return_data=False):
     #print("\nPlates by Wobbliness: ")
     #print_table(wobbly_ps_sorted)
 
+def force_sizing():
+    inventory(False,False,True)
+
 def upload():
     # Upload resource tracking data to a new CKAN resource under the given package ID.
     sys.path.insert(0, '/Users/drw/WPRDC/etl-dev/wprdc-etl') # A path that we need to import code from
@@ -678,7 +683,7 @@ def upload():
     target = PATH + "/resources.csv"
     testing = False
     if not testing:
-        list_of_dicts = inventory(False,True)
+        list_of_dicts = inventory(False,True,False)
     else: # Use the below entry for rapid testing (since it takes so long 
           # to compile the real results.
         list_of_dicts = [{'package_id': 'Squornshellous Zeta', 'package_name': 'text', 
