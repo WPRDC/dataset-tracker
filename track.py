@@ -1,4 +1,4 @@
-import os, sys, re, csv, time, textwrap, ckanapi, random
+import os, sys, re, csv, time, itertools, textwrap, ckanapi, random
 import requests
 import fire
 
@@ -49,14 +49,21 @@ def load_resources_from_file(server):
     else:
         return []
 
-def store_resources_as_file(rs,server):
+def store_resources_as_file(rs,server,field_names_seed=None):
     resources_filepath = get_resources_filepath(server)
     with open(resources_filepath,'w',encoding='utf-8') as f:
         f.write(dumps(rs, indent=4))
 
-    field_names = merged[0].keys()
+    if field_names_seed is not None:
+        field_names = field_names_seed
+    else:
+        # Make sure to get every possible field name (since some
+        # JSON rows lack some fields).
+        lists_of_field_names = [r.keys() for r in rs]
+        field_names = list(set(itertools.chain.from_iterable(lists_of_field_names)))
+    print("field_names = {}".format(field_names))
     target = PATH + "/resources.csv"
-    write_to_csv(target,merged,field_names)
+    write_to_csv(target,rs,field_names)
 
 def store(rs,server):
     return store_resources_as_file(rs,server)
@@ -218,7 +225,7 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
     if resource['id'] in old_ids:
         tracked_r = old_tracks[old_ids.index(resource['id'])]
         # If we've already looked at this resource today, use speedmode
-        # to skip over time-consuming steps.
+        # to skip over time-consuming steps for that resource.
         if tracked_r['last_seen'][:10] == datetime.today().date().isoformat():
            speedmode = True
     if sizing_override:
@@ -452,8 +459,27 @@ def check_links(tracks=None):
                 if response.status_code == 404:
                     items.append(print_and_format(r['resource_name'],durl))
                 # Other responses to consider:
-                # The HTTP 204 No Content success status response code indicates that the request has succeeded, but that the client doesn't need to go away from its current page. 
+                # 202 ACCEPTED The request has been accepted for processing, but the processing has not been completed. The request might or might not eventually be acted upon, as it might be disallowed when processing actually takes place. The 202 response is intentionally noncommittal. The representation sent with this response ought to describe the request's current status and point to (or embed) a status monitor that can provide the user with an estimate of when the request will be fulfilled. 
+                # For example, one link resulted in this response:
+                #   // 20180118105744
+                #    // https://pghgis-pittsburghpa.opendata.arcgis.com/datasets/34735757b7384fde97960cc01c4f3318_0.geojson
+                #    {
+                #      "processingTime": "2.2493333333333334 minutes",
+                #      "status": "Failed",
+                #      "generating": {
+                #        
+                #      },
+                #      "error": {
+                #        "message": "Service returned count of 0",
+                #        "code": 500
+                #      }
+                # So one could get the true (temporary) code from there.
+                # Returning to this link multiple times gives different responses, but the file never seems to get generated.
+
+
+                # The HTTP 204 No Content success status response code indicates that the request has succeeded, but that the client doesn't need to go away from its current page. (Links with this response seem to load just fine.)
                 # The HTTP 302 Found redirect status response code indicates that the resource requested has been temporarily moved to the URL given by the Location header.
+                # The HyperText Transfer Protocol (HTTP) 308 Permanent Redirect redirect status response code indicates that the resource requested has been definitively moved to the URL given by the Location headers. 
                 # The HTTP 401 Unauthorized client error status response code indicates that the request has not been applied because it lacks valid authentication credentials for the target resource.
 
                 # 500 Internal Server Error
@@ -469,7 +495,7 @@ def check_links(tracks=None):
     if len(items) > 0:
         msg = "{} dead links found:" + ", ".join(items)
 
-    store_resources_as_file(tracks,server)
+    store_resources_as_file(tracks,server,new_rows[0].keys())
 
 
 def check_all(tracks=None):
@@ -592,24 +618,23 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
         send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
 
 
-    if reharvest_count > 0:
-        msg = "dataset-tracker observed that {} resources were reharvested.".format(reharvest_count)
-        send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
-
-    store_resources_as_file(merged,server)
+    #if reharvest_count > 0:
+    #    msg = "dataset-tracker observed that {} resources were reharvested.".format(reharvest_count)
+    #    send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
+    #    send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
+# [ ] Debug this one!
+    store_resources_as_file(merged,server,new_rows[0].keys())
+    assert len(resources) == len(list_of_odicts) # We might not need both.
     print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(resources)))
-    field_names = new_rows[0].keys()
-    target = PATH + "/resources.csv"
-    write_to_csv(target,merged,field_names)
     if return_data:
         return merged
 
-    #wobbly_ps_sorted = sorted(wobbly_plates, 
-    #                        key=lambda u: -u['cycles_late'])
-    #print("\nPlates by Wobbliness: ")
-    #print_table(wobbly_ps_sorted)
-
 def force_sizing():
+    # This script prefers speedmode, since obtaining the dimensions for all the data tables and
+    # sizes for some of the files takes (for some reason) routinely over half an hour (maybe one
+    # request tends to hang for a long time), whereas speedmode requires only one request.
+    # But sometimes we need to slowly go through and update a bunch of sizes. This is the 
+    # function that does that.
     inventory(False,False,True)
 
 def upload():
