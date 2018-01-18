@@ -53,6 +53,9 @@ def store_resources_as_file(rs,server):
     resources_filepath = get_resources_filepath(server)
     with open(resources_filepath,'w',encoding='utf-8') as f:
         f.write(dumps(rs, indent=4))
+    field_names = new_rows[0].keys()
+    target = PATH + "/resources.csv"
+    write_to_csv(target,merged,field_names)
 
 def store(rs,server):
     return store_resources_as_file(rs,server)
