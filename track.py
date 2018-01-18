@@ -468,6 +468,9 @@ def check_links(tracks=None):
     if len(items) > 0:
         msg = "{} dead links found:" + ", ".join(items)
 
+    store_resources_as_file(tracks,server)
+
+
 def check_all(tracks=None):
     tracks = load_resources_from_file(server)
     list_unnamed(tracks)
