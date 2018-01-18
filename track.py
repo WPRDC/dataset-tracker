@@ -456,6 +456,12 @@ def check_links(tracks=None):
                 last_domain = domain(durl)
                 if response.status_code != 200:
                     print("   {}: {}".format(durl, response.status_code))
+                #if response.status_code == 308: # 308 was seen when running check_links many times
+                ## in a row (from the ArcGIS servers) but it has not been encountered on the most
+                ## recent test run, so this code will be commented out for now.
+                #    print("         {}: {}".format(durl, dir(response)))
+                #    if 'Location' in dir(response):
+                #        print("         {} redirect Location: {}.format(durl, response.Location))
                 if response.status_code == 404:
                     items.append(print_and_format(r['resource_name'],durl))
                 # Other responses to consider:
