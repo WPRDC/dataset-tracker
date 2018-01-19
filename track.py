@@ -137,15 +137,19 @@ def get_schema(site,resource_id,API_key=None):
 
     return schema
 
-def stringify_field(p,field,header):
+def sort_and_stringify_field(p,field,header):
+    # Sorting before converting fields to a string is a good idea because 
+    # if you don't do it, the fields wind up strung together in a random
+    # order (because this function uses sets to reduce a list to just the
+    # unique values), making cross-file comparisons difficult.
     field_string = ''
     if field in p:
         xs = p[field]
-        field_string = '|'.join(set([x[header] for x in xs]))
+        field_string = '|'.join(sorted(set([x[header] for x in xs])))
     return field_string
 
-def stringify_groups(p):
-    return stringify_field(p,'groups','title')
+def sort_and_stringify_groups(p):
+    return sort_and_stringify_field(p,'groups','title')
 
 def name_of_resource(resource):
     if 'name' not in resource:
@@ -270,8 +274,8 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
             # are probably manually uploaded.
 
 
-    groups_string = stringify_groups(package)
-    tags_string = stringify_field(package,'tags','name')
+    groups_string = sort_and_stringify_groups(package)
+    tags_string = sort_and_stringify_field(package,'tags','name')
     r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
         ('package_name',package['title']),
