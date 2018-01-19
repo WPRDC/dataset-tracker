@@ -290,6 +290,7 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
         ('first_seen',datetime.now().isoformat()),
         ('last_seen',datetime.now().isoformat()),
         ('total_days_seen',1),
+        ('last_modified',r['last_modified']),
         ('rows',rows),
         ('columns',columns),
         ('size',None if speedmode else size_estimate(resource,old_tracks)),
@@ -320,6 +321,7 @@ def update(record,x):
     modified_record['package_url'] = x['package_url'] 
     modified_record['download_url'] = x['download_url']
     modified_record['download_link_status'] = x['download_link_status']
+    modified_record['last_modified'] = x['last_modified']
     modified_record['rows'] = x['rows'] if x['rows'] is not None else record['rows']
     modified_record['columns'] = x['columns'] if x['columns'] is not None else record['columns']
     modified_record['size'] = x['size'] if x['size'] is not None else record['size'] # Only update the
@@ -737,6 +739,7 @@ def upload():
         first_seen = fields.DateTime(default=datetime.now().isoformat(),allow_none=True)
         last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
         total_days_seen = fields.Integer(allow_none=True)
+        last_modified = fields.DateTime(allow_none=True)
         rows = fields.Integer(allow_none=True)
         columns = fields.Integer(allow_none=True)
         size = fields.Integer(allow_none=True)
