@@ -578,9 +578,6 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
             new_row = extract_features(p,r,old_data,speedmode,sizing_override)
             linking_code = generate_linking_code(new_row)
             new_row['linking_code'] = linking_code
-            #print("resource_name = {}, linking_code = {}".format(new_row['resource_name'],new_row['linking_code']))
-            if p['id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
-                print("Found a Beltway resource: {}".format(new_row))
             list_of_odicts.append(new_row)
             print(".", end="", flush=True)
    
@@ -620,28 +617,18 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
     reharvest_count = 0
     new_package_ids = []
     for new_row in new_rows:
-        if new_row['package_id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
-            print("Working on a Beltway resource: {}".format(new_row))
         if new_row['resource_id'] not in processed_new_ids:
             # These are new resources that haven't ever been added or tracked.
 
             # However, harvested resources that have new resource IDs but are otherwise the same as previous resources need to be identified.
             reharvested = False
             if new_row['loading_method'] == 'harvested':
-                if new_row['package_id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
-                    print("new_row['linking_code'] = {}".format(new_row['linking_code']))
                 if new_row['linking_code'] in old_harvest_linking_codes:
                     reharvested = True
-                    if new_row['package_id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
-                        print("   This Beltway resource is being considered reharvested.")
 
             if reharvested:
                 reharvest_count += 1
             else:
-                if new_row['package_id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
-                    print("   This Beltway resource is being merged into tracks.")
-
-
                 item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
                 printable = "{} ({}) in {} from {}".format(new_row['resource_name'],new_row['resource_url'],new_row['package_name'],new_row['organization'])
                 brand_new.append(item)
