@@ -524,13 +524,11 @@ def generate_linking_code(tracked_resource):
     # the same information. (There are a bunch of these because of how the CKAN harvest 
     # extension works.)
 
-    # It also returns the linking code a second time if the resource is a harvested one.
-
     if 'loading_method' in tracked_resource and tracked_resource['loading_method'] == 'harvested':
         code = linking_code_template(tracked_resource)
-        return code, code
+        return code
     elif 'comments' not in tracked_resource or tracked_resource['comments'] != 'Manually added':
-        return tracked_resource['resource_id'], None
+        return tracked_resource['resource_id']
     else:
         assert 'linking_code' in tracked_resource
         code = tracked_resource['linking_code']
@@ -548,33 +546,63 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
     # the next line will only return non-private packages.
     packages = ckan.action.current_package_list_with_resources(limit=999999) 
     # This is a list of all the packages with all the resources nested inside and all the current information.
-   
+  
 #    old_data = load_resource_archive(site,API_key)
     old_data = load_resources_from_file(server)
     old_resource_ids = [r['resource_id'] for r in old_data]
     resources = []
     list_of_odicts = []
+    
+    
+    
+    old_package_names = [r['package_name'] for r in old_data]
+    old_package_ids = [r['package_id'] for r in old_data]
+    package_ids = [p['id'] for p in packages]
+    #print("len(package_ids) = {}. There are {} unique package IDs.".format(len(package_ids),len(set(package_ids))))
 
-    harvest_linking_codes = []
+    #    if p['title'] not in old_package_names:
+    #        print("{} ({}) is not being tracked.".format(p['title'],p['id']))
+
+    # The above code only prints 
+    # City of Pittsburgh Signalized Intersections (f470a3d5-f5cb-4209-93a6-c974f7d5a0a4) is not being tracked.
+    # but it actually is being tracked. 
+
     for p in packages:
-        resources += p['resources']
+        if p['id'] not in old_package_ids:
+            print("{} ({}) is not being tracked.".format(p['title'],p['id']))
+
+
+    for p in packages:
+        resources += p['resources'] #
         for r in p['resources']:
             new_row = extract_features(p,r,old_data,speedmode,sizing_override)
-            linking_code, harvest_linking_code = generate_linking_code(new_row)
+            linking_code = generate_linking_code(new_row)
             new_row['linking_code'] = linking_code
             #print("resource_name = {}, linking_code = {}".format(new_row['resource_name'],new_row['linking_code']))
-            if harvest_linking_code is not None:
-                harvest_linking_codes.append(str(harvest_linking_code))
+            if p['id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
+                print("Found a Beltway resource: {}".format(new_row))
             list_of_odicts.append(new_row)
             print(".", end="", flush=True)
    
     merged = [] 
     processed_new_ids = []
-    new_rows = list_of_odicts
+    new_rows = list_of_odicts # new_rows, harvest_linking_codes = fetch_live_resources(...)
+    print("len(list_of_odicts)) = {}".format(len(list_of_odicts)))
     print("len(new_rows) = {}".format(len(new_rows)))
     new_resource_ids = [r['resource_id'] for r in new_rows]
+    old_harvest_linking_codes = []
     for datum in old_data:
         old_id = datum['resource_id']
+        if 'loading_method' in datum and datum['loading_method'] == 'harvested':
+            if 'linking_code' in datum:
+                if datum['linking_code'] is not None:
+                    old_harvest_linking_codes.append(datum['linking_code'])
+            else:
+                # Generate one.
+                harvest_linking_code = generate_linking_code(datum)
+                if harvest_linking_code is not None:
+                    old_harvest_linking_codes.append(harvest_linking_code)
+
         if old_id not in new_resource_ids:
             #print("Adding the following resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
             merged.append(datum)
@@ -585,26 +613,35 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
             merged.append(modified_datum)
             processed_new_ids.append(old_id)
 
-    harvest_linking_codes = list(set(harvest_linking_codes))
+    print("len(merged) = {}".format(len(merged)))
+    old_harvest_linking_codes = list(set(old_harvest_linking_codes))
     print("len(processed_new_ids) = {}".format(len(processed_new_ids)))
-
     brand_new = []
     reharvest_count = 0
     new_package_ids = []
     for new_row in new_rows:
+        if new_row['package_id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
+            print("Working on a Beltway resource: {}".format(new_row))
         if new_row['resource_id'] not in processed_new_ids:
             # These are new resources that haven't ever been added or tracked.
 
             # However, harvested resources that have new resource IDs but are otherwise the same as previous resources need to be identified.
             reharvested = False
             if new_row['loading_method'] == 'harvested':
-                linking_code = linking_code_template(new_row)
-                if linking_code in harvest_linking_codes:
+                if new_row['package_id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
+                    print("new_row['linking_code'] = {}".format(new_row['linking_code']))
+                if new_row['linking_code'] in old_harvest_linking_codes:
                     reharvested = True
+                    if new_row['package_id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
+                        print("   This Beltway resource is being considered reharvested.")
 
             if reharvested:
                 reharvest_count += 1
             else:
+                if new_row['package_id'] == '1a5135de-cabe-4e23-b5e4-b2b8dd733817':
+                    print("   This Beltway resource is being merged into tracks.")
+
+
                 item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
                 printable = "{} ({}) in {} from {}".format(new_row['resource_name'],new_row['resource_url'],new_row['package_name'],new_row['organization'])
                 brand_new.append(item)
