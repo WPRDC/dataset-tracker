@@ -532,15 +532,8 @@ def generate_linking_code(tracked_resource):
     else:
         assert 'linking_code' in tracked_resource
         code = tracked_resource['linking_code']
-        if 'loading_method' in tracked_resource:
-            if tracked_resource['loading_method'] == 'harvested':
-                return code, code
-            else:
-                return code, None # Both of these lines might
-        return code, None # be wrong... If the loading_method is undefined
-        # or blank it might or might not be a harvested thing (if there's
-        # some old or incorrectly tagged resource in there.)
-        
+        return code
+
 def inventory(speedmode=False,return_data=False,sizing_override=False):
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
     # the next line will only return non-private packages.
