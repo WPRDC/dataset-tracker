@@ -533,6 +533,56 @@ def generate_linking_code(tracked_resource):
         assert 'linking_code' in tracked_resource
         code = tracked_resource['linking_code']
         return code
+# stats functions
+def identity(x):
+    return x
+
+def find_min(m,field,f = identity):
+    minimum = 99999999999
+    value = None
+    for r in m:
+        if field in r and f(r[field]) < minimum:
+            minimum = f(r[field])
+            value = r[field]
+    return minimum, value
+
+def find_max(m,field,f = identity):
+    maximum = -99999999999999999999999
+    value = None
+    for r in m:
+        if field in r and f(r[field]) > maximum:
+            maximum = f(r[field])
+            value = r[field]
+    return maximum, value
+
+def stats(tracks=None):
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+    package_set = set()
+    resource_count = len(tracks)
+    organization_set = set()
+    max_rows = 0
+    max_cols = 0
+    for r in tracks:
+        package_set.add(r['package_id'])
+        organization_set.add(r['organization'])
+        if 'rows' in r and r['rows'] is not None and r['rows'] > max_rows:
+            max_rows = r['rows']
+        if 'columns' in r and r['columns'] is not None and r['columns'] > max_cols:
+            max_cols = r['columns']
+
+    # Find the shortest nontrivial download URL:
+    def len_mod(x):
+        return 999999999999 if x is None else 9999999999 if x[0:8]=="http://#" else len(x)
+
+    shortest_download_url_length,shortest_download_url = find_min(tracks,'download_url',len_mod)
+
+
+    print("There appear to be {} packages in the tracking file and {} resources under {} organizations.".format(len(package_set),resource_count,len(organization_set)))
+
+    print("The longest table has {} rows, while the widest table has {} columns.".format(max_rows,max_cols))
+    print("The shortest download URL ({}) has {} characters.".format(shortest_download_url,shortest_download_url_length))
+# end stats functions
 
 def inventory(speedmode=False,return_data=False,sizing_override=False):
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
