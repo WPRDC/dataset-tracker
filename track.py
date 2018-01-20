@@ -290,7 +290,7 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
         ('first_seen',datetime.now().isoformat()),
         ('last_seen',datetime.now().isoformat()),
         ('total_days_seen',1),
-        ('last_modified',r['last_modified']),
+        ('last_modified',resource['last_modified']),
         ('rows',rows),
         ('columns',columns),
         ('size',None if speedmode else size_estimate(resource,old_tracks)),
