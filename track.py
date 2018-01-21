@@ -64,6 +64,7 @@ def store_resources_as_file(rs,server,field_names_seed=None):
     print("field_names = {}".format(field_names))
     target = PATH + "/resources.csv"
     write_to_csv(target,rs,field_names)
+    print("Just wrote {} rows to {} using these field names: {}".format(len(rs),target,field_names))
 
 def store(rs,server):
     return store_resources_as_file(rs,server)
@@ -839,10 +840,10 @@ def upload():
     log = open('uploaded.log', 'w+')
     if specify_resource_by_name:
         print("Piped data to {} on {} ({}).".format(kwargs['resource_name'],site,server))
-        log.write("Finished upserting {}\n".format(kwargs['resource_name']))
+        log.write("Finished upserting {} at {}\n".format(kwargs['resource_name'], datetime.now()))
     else:
         print("Piped data to {} on {} ({})".format(kwargs['resource_id'],site,server))
-        log.write("Finished upserting {}\n".format(kwargs['resource_id']))
+        log.write("Finished upserting {} at {}\n".format(kwargs['resource_id'], datetime.now()))
     log.close()
 
 def prompt_for(input_field):
