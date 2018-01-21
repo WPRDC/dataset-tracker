@@ -695,13 +695,13 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
         else:
             msg = "In {} new packages, dataset-tracker found these {} entirely new resources: ".format(len(new_package_ids),len(brand_new))
             msg += ', '.join(brand_new)
-        send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
+        #send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
+        #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
 
-
-    #if reharvest_count > 0:
-    #    msg = "dataset-tracker observed that {} resources were reharvested.".format(reharvest_count)
+    if reharvest_count > 0:
+        msg = "dataset-tracker observed that {} resources were reharvested.".format(reharvest_count)
     #    send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
-    #    send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
+        send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
 # [ ] Debug this one!
     store_resources_as_file(merged,server,new_rows[0].keys())
     assert len(resources) == len(list_of_odicts) # We might not need both.
