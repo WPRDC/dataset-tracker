@@ -621,18 +621,18 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
     for p in packages:
         resources += p['resources'] #
         for r in p['resources']:
-            new_row = extract_features(p,r,old_data,speedmode,sizing_override)
-            linking_code = generate_linking_code(new_row)
-            new_row['linking_code'] = linking_code
-            list_of_odicts.append(new_row)
+            current_row = extract_features(p,r,old_data,speedmode,sizing_override)
+            linking_code = generate_linking_code(current_row)
+            current_row['linking_code'] = linking_code
+            list_of_odicts.append(current_row)
             print(".", end="", flush=True)
    
     merged = [] 
-    processed_new_ids = []
-    new_rows = list_of_odicts # new_rows, harvest_linking_codes = fetch_live_resources(...)
+    processed_current_ids = []
+    current_rows = list_of_odicts # current_rows, harvest_linking_codes = fetch_live_resources(...)
     print("len(list_of_odicts)) = {}".format(len(list_of_odicts)))
-    print("len(new_rows) = {}".format(len(new_rows)))
-    new_resource_ids = [r['resource_id'] for r in new_rows]
+    print("len(current_rows) = {}".format(len(current_rows)))
+    current_resource_ids = [r['resource_id'] for r in current_rows]
     old_harvest_linking_codes = []
     for datum in old_data:
         old_id = datum['resource_id']
@@ -646,64 +646,68 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
                 if harvest_linking_code is not None:
                     old_harvest_linking_codes.append(harvest_linking_code)
 
-        if old_id not in new_resource_ids:
+        if old_id not in current_resource_ids:
             #print("Adding the following resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
             merged.append(datum)
         else: # A case where an existing record needs to be 
         # updated has been found.
-            x = new_rows[new_resource_ids.index(old_id)]
+            x = current_rows[current_resource_ids.index(old_id)]
             modified_datum = update(datum,x)
             merged.append(modified_datum)
-            processed_new_ids.append(old_id)
+            processed_current_ids.append(old_id)
+            # Here we merge all the current information about pre-existing resources with the tracking information
+            # where possible. (It can't be done here for reharvests).
 
     print("len(merged) = {}".format(len(merged)))
     old_harvest_linking_codes = list(set(old_harvest_linking_codes))
-    print("len(processed_new_ids) = {}".format(len(processed_new_ids)))
+    print("len(processed_current_ids) = {}".format(len(processed_current_ids)))
     brand_new = []
     reharvest_count = 0
-    new_package_ids = []
-    for new_row in new_rows:
-        if new_row['resource_id'] not in processed_new_ids:
+    current_package_ids = []
+    for current_row in current_rows:
+        if current_row['resource_id'] not in processed_current_ids:
             # These are new resources that haven't ever been added or tracked.
 
             # However, harvested resources that have new resource IDs but are otherwise the same as previous resources need to be identified.
             reharvested = False
-            if new_row['loading_method'] == 'harvested':
-                if new_row['linking_code'] in old_harvest_linking_codes:
+            if current_row['loading_method'] == 'harvested':
+                if current_row['linking_code'] in old_harvest_linking_codes: # This is not enough (we've got to check against the harvest linking codes upstream maybe).
                     reharvested = True
 
             if reharvested:
                 reharvest_count += 1
             else:
-                item = "<{}|{}> in {} from {}".format(new_row['resource_url'],new_row['resource_name'],new_row['package_name'],new_row['organization'])
-                printable = "{} ({}) in {} from {}".format(new_row['resource_name'],new_row['resource_url'],new_row['package_name'],new_row['organization'])
+                item = "<{}|{}> in {} from {}".format(current_row['resource_url'],current_row['resource_name'],current_row['package_name'],current_row['organization'])
+                printable = "{} ({}) in {} from {}".format(current_row['resource_name'],current_row['resource_url'],current_row['package_name'],current_row['organization'])
                 brand_new.append(item)
-                if datetime.now() - datetime.strptime(new_row['created'],"%Y-%m-%dT%H:%M:%S.%f") < timedelta(days = 6):
-                    new_row['first_published'] = new_row['created'] 
+                if datetime.now() - datetime.strptime(current_row['created'],"%Y-%m-%dT%H:%M:%S.%f") < timedelta(days = 6):
+                    current_row['first_published'] = current_row['created'] 
                 else: # Some resources were created long ago and only recently published.
-                    new_row['first_published'] = new_row['first_seen'] 
+                    current_row['first_published'] = current_row['first_seen'] 
 
-                new_package_ids.append(new_row['package_id'])
+                current_package_ids.append(current_row['package_id'])
                 msg = "dataset-tracker found an entirely new resource: " + printable
                 print(msg)
-                merged.append(new_row)
+                merged.append(current_row)
     
-    new_package_ids = list(set(new_package_ids))
+    current_package_ids = list(set(current_package_ids))
     if len(brand_new) > 0:
         if len(brand_new) == 1:
             msg = "dataset-tracker found an entirely new resource: " + brand_new[0]
         else:
-            msg = "In {} new packages, dataset-tracker found these {} entirely new resources: ".format(len(new_package_ids),len(brand_new))
+            msg = "In {} new packages, dataset-tracker found these {} entirely new resources: ".format(len(current_package_ids),len(brand_new))
             msg += ', '.join(brand_new)
+        print(msg)
         #send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
-        #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
+        send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
 
     if reharvest_count > 0:
         msg = "dataset-tracker observed that {} resources were reharvested.".format(reharvest_count)
     #    send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
-        send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
+        print(msg)
+        #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
 # [ ] Debug this one!
-    store_resources_as_file(merged,server,new_rows[0].keys())
+    store_resources_as_file(merged,server,current_rows[0].keys())
     assert len(resources) == len(list_of_odicts) # We might not need both.
     print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(resources)))
     if return_data:
