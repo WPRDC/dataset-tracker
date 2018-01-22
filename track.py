@@ -647,7 +647,7 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
                     old_harvest_linking_codes.append(harvest_linking_code)
 
         if old_id not in current_resource_ids:
-            #print("Adding the following resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
+            #print("Keeping the following old resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
             merged.append(datum)
         else: # A case where an existing record needs to be 
         # updated has been found.
@@ -671,7 +671,7 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
             # However, harvested resources that have new resource IDs but are otherwise the same as previous resources need to be identified.
             reharvested = False
             if current_row['loading_method'] == 'harvested':
-                if current_row['linking_code'] in old_harvest_linking_codes: # This is not enough (we've got to check against the harvest linking codes upstream maybe).
+                if current_row['linking_code'] in old_harvest_linking_codes: 
                     reharvested = True
 
             if reharvested:
@@ -688,7 +688,9 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
                 current_package_ids.append(current_row['package_id'])
                 msg = "dataset-tracker found an entirely new resource: " + printable
                 print(msg)
-                merged.append(current_row)
+            merged.append(current_row) # Whether it's reharvested or not, it's 
+            # got to be added as a resource to track, so that the resource IDs
+            # are known and can the URLs can be looked up in Google Analytics.
     
     current_package_ids = list(set(current_package_ids))
     if len(brand_new) > 0:
@@ -698,15 +700,14 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
             msg = "In {} new packages, dataset-tracker found these {} entirely new resources: ".format(len(current_package_ids),len(brand_new))
             msg += ', '.join(brand_new)
         print(msg)
-        #send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
-        send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
+        send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
+        #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
 
     if reharvest_count > 0:
         msg = "dataset-tracker observed that {} resources were reharvested.".format(reharvest_count)
-    #    send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
+        send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
         print(msg)
         #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
-# [ ] Debug this one!
     store_resources_as_file(merged,server,current_rows[0].keys())
     assert len(resources) == len(list_of_odicts) # We might not need both.
     print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(resources)))
