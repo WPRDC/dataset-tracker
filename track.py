@@ -308,7 +308,10 @@ def update(record,x):
     assert record['created'] == x['created']
     # The linking code is presumed to be immutable, based on how it's being defined.
     modified_record = OrderedDict(record)
-    last_seen = datetime.strptime(record['last_seen'],"%Y-%m-%dT%H:%M:%S.%f")
+    try:
+        last_seen = datetime.strptime(record['last_seen'],"%Y-%m-%dT%H:%M:%S.%f")
+    except ValueError: # isoformat sometimes outputs in the following format:
+        last_seen = datetime.strptime(record['last_seen'],"%Y-%m-%dT%H:%M:%S")
     now = datetime.now()
     modified_record['last_seen'] = now.isoformat()
     if last_seen.date() != now.date():
@@ -595,17 +598,15 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
   
 #    old_data = load_resource_archive(site,API_key)
     old_data = load_resources_from_file(server)
-    old_resource_ids = [r['resource_id'] for r in old_data]
-    resources = []
     list_of_odicts = []
     
     
     
-    old_package_names = [r['package_name'] for r in old_data]
+    
     old_package_ids = [r['package_id'] for r in old_data]
-    package_ids = [p['id'] for p in packages]
+    #package_ids = [p['id'] for p in packages]
     #print("len(package_ids) = {}. There are {} unique package IDs.".format(len(package_ids),len(set(package_ids))))
-
+    #old_package_names = [r['package_name'] for r in old_data]
     #    if p['title'] not in old_package_names:
     #        print("{} ({}) is not being tracked.".format(p['title'],p['id']))
 
@@ -619,7 +620,6 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
 
 
     for p in packages:
-        resources += p['resources'] #
         for r in p['resources']:
             current_row = extract_features(p,r,old_data,speedmode,sizing_override)
             linking_code = generate_linking_code(current_row)
@@ -629,7 +629,7 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
    
     merged = [] 
     processed_current_ids = []
-    current_rows = list_of_odicts # current_rows, harvest_linking_codes = fetch_live_resources(...)
+    current_rows = list_of_odicts # current_rows, old_data = fetch_live_resources(site,API_key,server,speedmode,sizing_override)
     print("len(list_of_odicts)) = {}".format(len(list_of_odicts)))
     print("len(current_rows) = {}".format(len(current_rows)))
     current_resource_ids = [r['resource_id'] for r in current_rows]
@@ -680,7 +680,11 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
                 item = "<{}|{}> in {} from {}".format(current_row['resource_url'],current_row['resource_name'],current_row['package_name'],current_row['organization'])
                 printable = "{} ({}) in {} from {}".format(current_row['resource_name'],current_row['resource_url'],current_row['package_name'],current_row['organization'])
                 brand_new.append(item)
-                if datetime.now() - datetime.strptime(current_row['created'],"%Y-%m-%dT%H:%M:%S.%f") < timedelta(days = 6):
+                try:
+                    created_dt = datetime.strptime(current_row['created'],"%Y-%m-%dT%H:%M:%S.%f")
+                except ValueError:
+                    created_dt = datetime.strptime(current_row['created'],"%Y-%m-%dT%H:%M:%S")
+                if datetime.now() - created_dt < timedelta(days = 6):
                     current_row['first_published'] = current_row['created'] 
                 else: # Some resources were created long ago and only recently published.
                     current_row['first_published'] = current_row['first_seen'] 
@@ -709,8 +713,7 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
         print(msg)
         #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
     store_resources_as_file(merged,server,current_rows[0].keys())
-    assert len(resources) == len(list_of_odicts) # We might not need both.
-    print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(resources)))
+    print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(list_of_odicts)))
     if return_data:
         return merged
 
