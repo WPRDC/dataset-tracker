@@ -162,6 +162,14 @@ def download_url_of_resource(resource):
     return resource['url'] if 'url' in resource else None
 
 def size_estimate(resource,old_tracks):
+    """Returns the size of the resource, when it's possible to determine it from the response
+    to the HEAD call. Otherwise, it randomly decides whether to download the file and determine
+    the size that way. Else, it returns None (which it also does if it can't determine the 
+    file size for some other reason).
+
+    Thus, if this function is run to update the size, even if None is returned, it seems 
+    reasonable to update the last_sized timestamp.
+    """
     if resource['format'] in ['HTML','html']:
         r_name = name_of_resource(resource)
         download_url = download_url_of_resource(resource)
@@ -274,9 +282,11 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
             loading_method = 'manual' # These
             # are probably manually uploaded.
 
+    estimated_size = None if speedmode else size_estimate(resource,old_tracks)
 
     groups_string = sort_and_stringify_groups(package)
     tags_string = sort_and_stringify_field(package,'tags','name')
+    now = datetime.now().isoformat())
     r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
         ('package_name',package['title']),
@@ -288,13 +298,14 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
         ('download_link_status',download_link_status),
         ('created',resource['created']),
         ('first_published',None),
-        ('first_seen',datetime.now().isoformat()),
-        ('last_seen',datetime.now().isoformat()),
+        ('first_seen',now),
+        ('last_seen',now),
         ('total_days_seen',1),
         ('last_modified',resource['last_modified']),
         ('rows',rows),
         ('columns',columns),
-        ('size',None if speedmode else size_estimate(resource,old_tracks)),
+        ('size',estimated_size),
+        ('last_sized',now),
         ('loading_method',loading_method),
         ('format',resource['format']),
         ('tags',tags_string),
@@ -330,6 +341,8 @@ def update(record,x):
     modified_record['columns'] = x['columns'] if x['columns'] is not None else record['columns']
     modified_record['size'] = x['size'] if x['size'] is not None else record['size'] # Only update the
     # 'size' field if a new value has been obtained.
+    modified_record['last_sized'] = x['last_sized']
+
     modified_record['loading_method'] = x['loading_method']
     modified_record['format'] = x['format']
     modified_record['tags'] = x['tags']
@@ -360,20 +373,28 @@ def list_unnamed(tracks=None):
         print("\n"+msg)
 
 def check_all_unknown_sizes(tracks=None):
+    """This function hasn't been needed so far since the resources with unknown sizes tend to be either 
+    links or missing files.
+
+    This function hasn't been tested recently, and will likely break on dead resources."""
     if tracks is None:
         tracks = load_resources_from_file(server)
     updated_something = False
     for k,r in enumerate(tracks):
         if 'size' not in r or r['size'] in [None]:
             estimate = size_estimate(r,tracks)
+            now = datetime.now().isoformat())
+            if 'size' in r:
+                if r['size'] != estimate:
+                    print("The size estimate of {} changed from {} to {}.".format(r['resource_name'],r['size'],estimate))
+                # Otherwise the size estimate has not changed, but we still need to update the last_sized field.
             if estimate is None:
                 print("The size of {} hadn't been determined and still can't be determined. It's listed as being in the {} format. Here's the download URL: {}".format(r['resource_id'], r['format'], r['resource_url']))
             else:
                 print("The size of {} wasn't previously determined. It's listed as being in the {} format. It looks like it's actually {}".format(r['resource_id'], r['format'], estimate))
-                updated_something = True
-    if updated_something:
-        store_resources_as_file(tracks,server)
-        print("One or more resource sizes were updated.")
+            r['size'] = estimate
+            r['last_sized'] = now
+    store_resources_as_file(tracks,server)
 
 def is_harvested_package(raw_package):
     # Our current rule-of-thumb as to whether a package is harvested is whether it contains an
@@ -787,6 +808,7 @@ def upload():
         rows = fields.Integer(allow_none=True)
         columns = fields.Integer(allow_none=True)
         size = fields.Integer(allow_none=True)
+        last_sized = fields.DateTime(allow_none=True)
         _format = fields.String(dump_to='format',allow_none=False)
         loading_method = fields.String(allow_none=True)
         tags = fields.String(allow_none=True)
