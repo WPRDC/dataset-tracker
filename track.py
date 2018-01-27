@@ -522,6 +522,43 @@ def check_all(tracks=None):
     check_links(tracks)
     check_live_licenses()
 
+
+def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speedmode=False,return_data=False,sizing_override=False):
+### Think through what else needs to be moved around to make this self-contained and 
+### to make the code from inventory() removable.
+    ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
+# the next line will only return non-private packages.
+    packages = ckan.action.current_package_list_with_resources(limit=999999)
+    # This is a list of all the packages with all the resources nested inside and all the current information.
+
+#    old_data = load_resource_archive(site,API_key)
+    old_data = load_resources_from_file(server)
+    list_of_odicts = []
+    old_package_ids = [r['package_id'] for r in old_data]
+    #package_ids = [p['id'] for p in packages]
+    #print("len(package_ids) = {}. There are {} unique package IDs.".format(len(package_ids),len(set(package_ids))))
+    #old_package_names = [r['package_name'] for r in old_data]
+    #    if p['title'] not in old_package_names:
+    #        print("{} ({}) is not being tracked.".format(p['title'],p['id']))
+
+    # The above code only prints
+    # City of Pittsburgh Signalized Intersections (f470a3d5-f5cb-4209-93a6-c974f7d5a0a4) is not being tracked.
+    # but it actually is being tracked.
+
+    for p in packages:
+        if p['id'] not in old_package_ids:
+            print("{} ({}) is not being tracked.".format(p['title'],p['id']))
+
+    for p in packages:
+        for r in p['resources']:
+            current_row = extract_features(p,r,old_data,speedmode,sizing_override)
+            linking_code = generate_linking_code(current_row)
+            current_row['linking_code'] = linking_code
+            list_of_odicts.append(current_row)
+            print(".", end="", flush=True)
+
+    return list_of_odicts, old_data, packages
+
 def linking_code_template(datum):
     return datum['package_id'] + ' | ' + datum['resource_name']
 
@@ -599,8 +636,6 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
 #    old_data = load_resource_archive(site,API_key)
     old_data = load_resources_from_file(server)
     list_of_odicts = []
-    
-    
     
     
     old_package_ids = [r['package_id'] for r in old_data]
