@@ -648,7 +648,7 @@ def stats(tracks=None):
     print("The shortest download URL ({}) has {} characters.".format(shortest_download_url,shortest_download_url_length))
 # end stats functions
 
-def inventory(speedmode=False,return_data=False,sizing_override=False):
+def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=False):
     current_rows, old_data, packages = fetch_live_resources(site,API_key,server,speedmode,sizing_override)
 
     merged = [] 
@@ -727,12 +727,14 @@ def inventory(speedmode=False,return_data=False,sizing_override=False):
             msg = "In {} new packages, dataset-tracker found these {} entirely new resources: ".format(len(current_package_ids),len(brand_new))
             msg += ', '.join(brand_new)
         print(msg)
-        send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
-        #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
+        if alerts_on:
+            send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
+            #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
 
     if reharvest_count > 0:
         msg = "dataset-tracker observed that {} resources were reharvested.".format(reharvest_count)
-        send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
+        if alerts_on:
+            send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
         print(msg)
         #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
     store_resources_as_file(merged,server,current_rows[0].keys())
@@ -746,7 +748,7 @@ def force_sizing():
     # request tends to hang for a long time), whereas speedmode requires only one request.
     # But sometimes we need to slowly go through and update a bunch of sizes. This is the 
     # function that does that.
-    inventory(False,False,True)
+    inventory(False,False,False,True)
 
 def upload():
     # Upload resource tracking data to a new CKAN resource under the given package ID.
@@ -828,7 +830,7 @@ def upload():
     target = PATH + "/resources.csv"
     testing = False
     if not testing:
-        list_of_dicts = inventory(False,True,False)
+        list_of_dicts = inventory(False,False,True,False)
     else: # Use the below entry for rapid testing (since it takes so long 
           # to compile the real results.
         list_of_dicts = [{'package_id': 'Squornshellous Zeta', 'package_name': 'text', 
