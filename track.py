@@ -286,7 +286,7 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
 
     groups_string = sort_and_stringify_groups(package)
     tags_string = sort_and_stringify_field(package,'tags','name')
-    now = datetime.now().isoformat())
+    now = datetime.now().isoformat()
     r_tuples = [('resource_name',resource_name),
         ('resource_id',resource['id']),
         ('package_name',package['title']),
@@ -383,7 +383,7 @@ def check_all_unknown_sizes(tracks=None):
     for k,r in enumerate(tracks):
         if 'size' not in r or r['size'] in [None]:
             estimate = size_estimate(r,tracks)
-            now = datetime.now().isoformat())
+            now = datetime.now().isoformat()
             if 'size' in r:
                 if r['size'] != estimate:
                     print("The size estimate of {} changed from {} to {}.".format(r['resource_name'],r['size'],estimate))
