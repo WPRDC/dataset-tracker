@@ -37,6 +37,11 @@ def print_table(rs):
             r['rows']))
     print("=========================================================================\n")
 
+def pluralize(word,xs,count=None):
+    if xs is not None:
+        count = len(xs)
+    return "{} {}{}".format(count,word,'' if count == 1 else 's')
+
 def get_resources_filepath(server):
     return "{}/resources-{}.json".format(PATH,server)
 
@@ -369,7 +374,7 @@ def list_unnamed(tracks=None):
             item = "{} in {} ({})".format(r['format'],r['package_name'],r['resource_id'])
 
     if len(items) > 0:
-        msg = "{} unnamed resources found:" + ", ".join(items)
+        msg = pluralize("unnamed resource",items) + " found:" + ", ".join(items)
         print("\n"+msg)
 
 def check_all_unknown_sizes(tracks=None):
@@ -434,7 +439,7 @@ def check_live_licenses():
     print("Distribution of licenses by package:")
     pprint(dict(license_counts))
     if len(items) > 0:
-        msg = "{} packages without licenses found: ".format(len(items), ", ".join(items))
+        msg = "{} without licenses found: ".format(pluralize('package',items), ", ".join(items))
         print(msg)
         # These tend to be harvested packages.
         nonharvested = []
@@ -442,7 +447,7 @@ def check_live_licenses():
             if not is_harvested_package(p):
                 nonharvested.append(p['title'])
         if len(items) == 1:
-            msg = "This single package is particularly interesting because it is a non-harvested packages without a license: {}".format(len(nonharvested),", ".join(nonharvested))
+            msg = "This single package is particularly interesting because it is a non-harvested package without a license: {}".format(len(nonharvested),", ".join(nonharvested))
         else:
             msg = "These {} packages are particularly interesting because they are non-harvested packages without licenses: {}".format(len(nonharvested),", ".join(nonharvested))
         print(msg)
@@ -461,7 +466,7 @@ def check_formats(tracks=None):
                 items.append("{} ({})".format(r['resource_name'],r['format'] if r not in [None,''] else "<missing format>"))
 
     if len(items) > 0:
-        msg = "{} resources with non-standard formats found: {}".format(len(items), ", ".join(items))
+        msg = "{} with non-standard formats found: {}".format(pluralize("resource",items), ", ".join(items))
         print(msg)
 
 def check_links(tracks=None):
@@ -530,7 +535,8 @@ def check_links(tracks=None):
                 items.append(print_and_format(r['resource_name'],durl))
 
     if len(items) > 0:
-        msg = "{} dead links found:" + ", ".join(items)
+        msg = "{} found: {}".format(pluralize("dead link",items), ", ".join(items))
+        print(msg)
 
     store_resources_as_file(tracks,server)
 
@@ -724,7 +730,8 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
         if len(brand_new) == 1:
             msg = "dataset-tracker found an entirely new resource: " + brand_new[0]
         else:
-            msg = "In {} new packages, dataset-tracker found these {} entirely new resources: ".format(len(current_package_ids),len(brand_new))
+            plural = (len(brand_new) != 1)
+            msg = "In {}, dataset-tracker found {} {}: ".format(pluralize("new packages",current_package_ids), "these" if plural else "this", pluralize("entirely new resource",brand_new))
             msg += ', '.join(brand_new)
         print(msg)
         if alerts_on:
@@ -732,13 +739,14 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
             #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
 
     if reharvest_count > 0:
-        msg = "dataset-tracker observed that {} resources were reharvested.".format(reharvest_count)
+        msg = "dataset-tracker observed that {} were reharvested.".format(pluralize("resource",None,reharvest_count))
         if alerts_on:
             send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
         print(msg)
         #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
     store_resources_as_file(merged,server,current_rows[0].keys())
-    print("{} currently has {} datasets and {} resources.".format(site,len(packages),len(current_rows)))
+
+    print("{} currently has {} and {}.".format(site,pluralize("dataset",packages),pluralize("resource",current_rows)))
     if return_data:
         return merged
 
