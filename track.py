@@ -663,6 +663,9 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
     print("len(current_rows) = {}".format(len(current_rows)))
     current_resource_ids = [r['resource_id'] for r in current_rows]
     old_harvest_linking_codes = []
+    disappeared_dict = defaultdict(list) # A dictionary that lists formatted message strings about each 
+    # resource that has just disappeared in this iteration (based on whether it has just 
+    # flipped to inactive), under a key equal to the package ID.
     for datum in old_data:
         old_id = datum['resource_id']
         if 'loading_method' in datum and datum['loading_method'] == 'harvested':
@@ -677,16 +680,27 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
 
         if old_id not in current_resource_ids:
             #print("Keeping the following old resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
+            if 'active' in datum and datum['active'] in ['True',True]:
+                # This resource appears to have been made private or deleted since the last scan.
+                d_msg = "{} ({})".format(datum['resource_name'],datum['resource_id'])
+                disappeared_dict[datum['package_id']].append(d_msg)
+                datum['active'] = False
             merged.append(datum)
         else: # A case where an existing record needs to be 
         # updated has been found.
             x = current_rows[current_resource_ids.index(old_id)]
             modified_datum = update(datum,x)
+            modified_datum['active'] = True
             merged.append(modified_datum)
             processed_current_ids.append(old_id)
             # Here we merge all the current information about pre-existing resources with the tracking information
             # where possible. (It can't be done here for reharvests).
 
+    if len(disappeared_dict) > 0:
+        print("Resources that disappeared, grouped by package ID:")
+        for dd in disappeared_dict:
+            print("{}: {}".format(dd,', '.join(disappeared_dict[dd])))
+        
     print("len(merged) = {}".format(len(merged)))
     old_harvest_linking_codes = list(set(old_harvest_linking_codes))
     print("len(processed_current_ids) = {}".format(len(processed_current_ids)))
@@ -694,6 +708,7 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
     reharvest_count = 0
     current_package_ids = []
     for current_row in current_rows:
+        current_row['active'] = True
         if current_row['resource_id'] not in processed_current_ids:
             # These are new resources that haven't ever been added or tracked.
 
@@ -782,6 +797,7 @@ def upload():
         last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
         total_days_seen = fields.Integer(allow_none=True)
         last_modified = fields.DateTime(allow_none=True)
+        active = fields.Boolean(allow_none=True)
         rows = fields.Integer(allow_none=True)
         columns = fields.Integer(allow_none=True)
         size = fields.Integer(allow_none=True)
