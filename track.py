@@ -166,7 +166,7 @@ def name_of_resource(resource):
 def download_url_of_resource(resource):
     return resource['url'] if 'url' in resource else None
 
-def size_estimate(resource,old_tracks):
+def size_estimate(resource,old_tracks,force_sizing=False):
     """Returns the size of the resource, when it's possible to determine it from the response
     to the HEAD call. Otherwise, it randomly decides whether to download the file and determine
     the size that way. Else, it returns None (which it also does if it can't determine the 
@@ -213,7 +213,8 @@ def size_estimate(resource,old_tracks):
             if t['resource_id'] == resource_id: 
                 if 'size' in t and t['size'] is not None:
                     size_is_known = True
-        if random.random() < 0.1 - 0.05*size_is_known:
+        size_it = (random.random() < 0.1 - 0.05*size_is_known) or force_sizing
+        if size_it:
             # Actually fetch the resource and determine the file size.
             print("Getting {} to determine its file size.".format(url))
             r2 = requests.get(url)
@@ -700,6 +701,7 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
         print("Resources that disappeared, grouped by package ID:")
         for dd in disappeared_dict:
             print("{}: {}".format(dd,', '.join(disappeared_dict[dd])))
+
         
     print("len(merged) = {}".format(len(merged)))
     old_harvest_linking_codes = list(set(old_harvest_linking_codes))
