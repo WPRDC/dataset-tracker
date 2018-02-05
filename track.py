@@ -388,7 +388,7 @@ def check_all_unknown_sizes(tracks=None):
     updated_something = False
     for k,r in enumerate(tracks):
         if 'size' not in r or r['size'] in [None]:
-            estimate = size_estimate(r,tracks)
+            estimate = size_estimate(r,tracks,True)
             now = datetime.now().isoformat()
             if 'size' in r:
                 if r['size'] != estimate:
