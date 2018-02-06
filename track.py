@@ -174,12 +174,14 @@ def size_estimate(resource,old_tracks,force_sizing=False):
 
     Thus, if this function is run to update the size, even if None is returned, it seems 
     reasonable to update the last_sized timestamp.
+
+    The second parameter returned indicates whether the function attempted to size the resource.
     """
     if resource['format'] in ['HTML','html']:
         r_name = name_of_resource(resource)
         download_url = download_url_of_resource(resource)
         #print("Not saving a file size estimate since {} ({}) appears to be a link to a web page".format(r_name,download_url))
-        return None
+        return None, True
     if 'url' in resource:
         url = resource['url']
         resource_id = resource['id'] # 'id', not 'resource_id' 
@@ -188,21 +190,21 @@ def size_estimate(resource,old_tracks,force_sizing=False):
         url = resource['download_url']
         resource_id = resource['resource_id']
     else:
-        return None
+        return None, True
 
-    if url == 'http://#': # Handle local convention for 
-        return None       # disabling downloading of big 
-                          # tables in the datastore.
+    if url == 'http://#':   # Handle local convention for 
+        return None, True  # disabling downloading of big 
+                            # tables in the datastore.
                                           
     response = requests.head(url)
     #print("response.headers = {}".format(response.headers))
     if response.status_code in [404]:
-        return None
+        return None, True
     if 'Content-Range' in response.headers:
         estimate = int(response.headers['Content-Range'].split('/')[1])
-        return estimate
+        return estimate, True
     elif 'Content-Length' in response.headers:
-        return int(response.headers['Content-Length'])
+        return int(response.headers['Content-Length']), True
     else:
         #print("Unable to identify the size of the transferred file from these headers: {}".format(response.headers))
         # I believe that almost all files in this category are files that need to be dumped from datastore tables.
@@ -221,18 +223,22 @@ def size_estimate(resource,old_tracks,force_sizing=False):
             if 'Content-Range' in r2.headers:
                 estimate = int(r2.headers['Content-Range'].split('/')[1])
                 print("   Content-Range: Determined {} to have a size of {}.".format(resource_id,estimate))
-                return estimate
+                return estimate, True
             elif 'Content-Length' in r2.headers:
                 estimate = int(r2.headers['Content-Length'])
                 print("   Content-Length: Determined {} to have a size of {}.".format(resource_id,estimate))
-                return estimate
+                return estimate, True
             elif 'Content-Type' in r2.headers and r2.headers['Content-Type'] == 'text/csv':
                 estimate = len(r2.text)
                 print("   len(r2.text): Determined {} to have a size of {}.".format(resource_id,estimate))
-                return estimate
+                return estimate, True
             print("Unable to identify the size of the transferred file from the HEAD headers {} or from the GET headers".format(response.headers,r2.headers))
+            return resource['size'], True # I think this should work both for CKAN API response resources and tracks.
+        else:
+            return resource['size'], False # False here means that the function didn't try to size the resource.
 
-        return resource['size'] # I think this should work both for CKAN API response resources and tracks.
+        # This next line should never need to be called:
+        #return resource['size'], False # I think this should work both for CKAN API response resources and tracks.
 
 def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_override=False):
     # speedmode can be set to False by the user, but presently this
