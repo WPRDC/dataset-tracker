@@ -294,7 +294,12 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
             loading_method = 'manual' # These
             # are probably manually uploaded.
 
-    estimated_size = None if speedmode else size_estimate(resource,old_tracks)
+
+    if speedmode:
+        estimated_size = None
+        sizing_attempted = False
+    else:
+        estimated_size, sizing_attempted = size_estimate(resource,old_tracks)
 
     groups_string = sort_and_stringify_groups(package)
     tags_string = sort_and_stringify_field(package,'tags','name')
@@ -317,7 +322,7 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
         ('rows',rows),
         ('columns',columns),
         ('size',estimated_size),
-        ('last_sized',now),
+        ('last_sized',now if sizing_attempted else None),
         ('loading_method',loading_method),
         ('format',resource['format']),
         ('tags',tags_string),
@@ -353,8 +358,8 @@ def update(record,x):
     modified_record['columns'] = x['columns'] if x['columns'] is not None else record['columns']
     modified_record['size'] = x['size'] if x['size'] is not None else record['size'] # Only update the
     # 'size' field if a new value has been obtained.
-    modified_record['last_sized'] = x['last_sized']
-
+    modified_record['last_sized'] = x['last_sized'] if x['last_sized'] is not None else record['last_sized']
+    # Only update the 'last_sized' field if a new (non-None) value has been obtained.
     modified_record['loading_method'] = x['loading_method']
     modified_record['format'] = x['format']
     modified_record['tags'] = x['tags']
