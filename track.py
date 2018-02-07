@@ -678,6 +678,51 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
     disappeared_dict = defaultdict(list) # A dictionary that lists formatted message strings about each 
     # resource that has just disappeared in this iteration (based on whether it has just 
     # flipped to inactive), under a key equal to the package ID.
+
+
+    if not speedmode and not sizing_override:
+        # When it's OK for the code to take a while to run, size the 
+        # 10 resources that most need sizing.
+        resources_to_size = 10
+        ###### Sizing code intended to size code that most needs sizing
+        # [ ] The last_modified date of the package/resource should also
+        # be weighed in this decision.
+        sizing_dates = []
+        old_ids = [t['resource_id'] for t in old_data]
+        a_long_time_ago = '1018-02-05T15:22:47.686048'
+        for k,current_row in enumerate(current_rows): # This might not be the best place to do this...
+            if current_row['resource_id'] in old_ids:
+                tracked_r = old_data[old_ids.index(current_row['resource_id'])]
+                date_sized = tracked_r['last_sized'] if tracked_r['last_sized'] is not None else a_long_time_ago
+                #sizing_dates.append((k,date_sized))
+                sizing_dates.append(date_sized)
+        sds = sizing_dates
+        simply_sorted_sds, indices = zip(*sorted(zip(sizing_dates,range(0,len(sizing_dates))), key=lambda w: w[0]))
+        # Such sorting is not the most efficient algorithm, but it will do when the number of rows is 
+        # as small as it is.
+        # If 'last_sized' is None, we should definitely prioritize sizing it since
+        # even a failed attempt should update the 'last_sized' field.
+        for k in indices[:resources_to_size]:
+            current_row = current_rows[k]
+            print("Sizing row {}: {}".format(k,current_row['resource_name']))
+            new_estimate, _ = size_estimate(current_row,old_data,force_sizing=True)
+            assert _ == True
+            if new_estimate is not None or 'size' not in current_row:
+                current_row['size'] = new_estimate
+                current_row['last_sized'] = datetime.now().isoformat()
+            elif new_estimate is None:
+                if 'size' in current_row:
+                    if current_row['size'] is None:
+                        current_row['last_sized'] = datetime.now().isoformat()
+                else:
+                    current_row['last_sized'] = datetime.now().isoformat()
+
+            current_rows[k] = current_row # Should do nothing if current_row is the same
+            # object as current_rows[k].
+        #########
+
+
+
     for datum in old_data:
         old_id = datum['resource_id']
         if 'loading_method' in datum and datum['loading_method'] == 'harvested':
