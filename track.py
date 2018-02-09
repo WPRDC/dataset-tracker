@@ -389,6 +389,22 @@ def list_unnamed(tracks=None):
         msg = pluralize("unnamed resource",items) + " found:" + ", ".join(items)
         print("\n"+msg)
 
+def find_empty_tables(tracks=None,alerts_on=False):
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+    items = []
+    for k,r in enumerate(tracks):
+        if 'cols' in r and r['cols'] is not None and 'rows' in r and r['cols'] is None:
+            print("{} in {} has no rows. It looks like the upload or ETL script broke. Here's the URL: {}".format(r['resource_id'], r['package_name'], r['resource_url']))
+            item = "{} in {} ({})".format(r['format'],r['package_name'],r['resource_id'])
+
+    if len(items) > 0:
+        msg = pluralize("empty table",items) + " found:" + ", ".join(items)
+        send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':koolaid:')
+        print("\n"+msg)
+    else:
+        print("No empty tables found.")
+
 def check_all_unknown_sizes(tracks=None):
     """This function hasn't been needed so far since the resources with unknown sizes tend to be either 
     links or missing files.
@@ -560,6 +576,7 @@ def check_all(tracks=None):
     check_formats(tracks)
     check_links(tracks)
     check_live_licenses()
+    find_empty_tables(tracks,False)
 
 
 def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speedmode=False,return_data=False,sizing_override=False):
