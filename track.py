@@ -1,5 +1,6 @@
 import os, sys, re, csv, time, itertools, textwrap, ckanapi, random
 import requests
+import shutil
 import fire
 
 from datetime import datetime, timedelta
@@ -50,6 +51,10 @@ def load_resources_from_file(server):
     if os.path.exists(resources_filepath):
         with open(resources_filepath,'r',encoding='utf-8') as f:
             resources = loads(f.read())
+        # Also back up this file, so that any changes can be easily undone.
+        backup_filepath = '/'.join(resources_filepath.split('/')[:-1] + ['backup.json']) 
+        shutil.copy(resources_filepath, backup_filepath)
+
         return resources
     else:
         return []
