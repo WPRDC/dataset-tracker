@@ -826,7 +826,7 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
             msg = "dataset-tracker found an entirely new resource: " + brand_new[0]
         else:
             plural = (len(brand_new) != 1)
-            msg = "In {}, dataset-tracker found {} {}: ".format(pluralize("new packages",current_package_ids), "these" if plural else "this", pluralize("entirely new resource",brand_new))
+            msg = "In {}, dataset-tracker found {} {}: ".format(pluralize("package",current_package_ids), "these" if plural else "this", pluralize("entirely new resource",brand_new))
             msg += ', '.join(brand_new)
         print(msg)
         if alerts_on:
