@@ -1067,6 +1067,10 @@ def edit(resource_id=None):
     store(resources,server)
     print('"{}" has been edited.'.format(r['resource_id']))
 
+def refresh_csv():
+    resources = load(server)
+    store_resources_as_file(resources,server)
+
 server = "test-production"
 #server = "sandbox"
 with open(SETTINGS_FILE) as f:
