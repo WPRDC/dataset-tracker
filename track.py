@@ -704,8 +704,8 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
 
     if not speedmode and not sizing_override:
         # When it's OK for the code to take a while to run, size the 
-        # 10 resources that most need sizing.
-        resources_to_size = 10
+        # n resources that most need sizing.
+        resources_to_size = 5
         ###### Sizing code intended to size code that most needs sizing
         # [ ] The last_modified date of the package/resource should also
         # be weighed in this decision.
