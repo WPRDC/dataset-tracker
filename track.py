@@ -414,7 +414,8 @@ def find_empty_tables(tracks=None,alerts_on=False):
 
     if len(items) > 0:
         msg = pluralize("empty table",items) + " found:" + ", ".join(items)
-        send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':koolaid:')
+        if alerts_on:
+            send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':koolaid:')
         print("\n"+msg)
     else:
         print("No empty tables found.")
