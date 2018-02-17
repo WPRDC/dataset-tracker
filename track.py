@@ -202,10 +202,9 @@ def size_estimate(resource,old_tracks,force_sizing=False):
                             # tables in the datastore.
 
     try:
-        response = requests.head(url,timeout=10)
+        response = requests.head(url,timeout=60)
     except requests.exceptions.Timeout:
         print("Timed out while getting the head from {}".format(url))
-        print("response.headers = {}".format(response.headers))
         return None, True
     if response.status_code in [404]:
         return None, True
@@ -230,10 +229,9 @@ def size_estimate(resource,old_tracks,force_sizing=False):
             print("Getting {} to determine its file size.".format(url))
 
             try:
-                r2 = requests.get(url,timeout=10)
+                r2 = requests.get(url,timeout=60)
             except requests.exceptions.Timeout:
                 print("Timed out while getting {}".format(url))
-                print("r2.headers = {}".format(r2.headers))
                 return resource['size'], True
 
             if 'Content-Range' in r2.headers:
@@ -529,19 +527,17 @@ def check_links(tracks=None):
                     time.sleep(0.01)
 
                 try:
-                    response = requests.head(durl,timeout=10)
+                    response = requests.head(durl,timeout=60)
                 except requests.exceptions.Timeout:
                     print("Timed out while getting the head from {}".format(durl))
-                    print("response.headers = {}".format(response.headers))
                     items.append("Unable to get the head from {} for {}".format(durl,r['resource_name']))
 
                 # 405 Method Not Allowed (the server refuses to respond to a HEAD request.)
                 if response.status_code == 405:
                     try:
-                        response = requests.get(durl,timeout=10)
+                        response = requests.get(durl,timeout=60)
                     except requests.exceptions.Timeout:
                         print("Timed out while getting {}".format(url))
-                        print("response.headers = {}".format(response.headers))
                         items.append("Unable to get {} for {}".format(url,r['resource_name']))
 
                 checked_urls[durl] = response.status_code
