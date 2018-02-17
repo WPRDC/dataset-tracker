@@ -719,7 +719,8 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
     old_harvest_linking_codes = []
     disappeared_dict = defaultdict(list) # A dictionary that lists formatted message strings about each 
     # resource that has just disappeared in this iteration (based on whether it has just 
-    # flipped to inactive), under a key equal to the package ID.
+    # flipped to inactive), under a key equal to the package ID, except for harvested resources,
+    # the disappearance of which is ignored as normal.
 
 
     if not speedmode and not sizing_override:
@@ -782,7 +783,15 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
             if 'active' in datum and datum['active'] in ['True',True]:
                 # This resource appears to have been made private or deleted since the last scan.
                 d_msg = "{} ({})".format(datum['resource_name'],datum['resource_id'])
-                disappeared_dict[datum['package_id']].append(d_msg)
+                package_key = "{} [{}]".format(datum['package_name'], datum['package_id'])
+                if 'loading_method' in datum and datum['loading_method'] == 'harvested':
+                    # [ ] If this resource is a harvested resource and goes inactive,
+                    # its disappearance need not be noted here, though it would be 
+                    # useful to eventually use this opportunity to automatically link
+                    # those resources with the newly created ones in the same package.
+                    pass
+                else:
+                    disappeared_dict[package_key].append(d_msg)
                 datum['active'] = False
             merged.append(datum)
         else: # A case where an existing record needs to be 
@@ -797,9 +806,15 @@ def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=
 
     if len(disappeared_dict) > 0:
         print("Resources that disappeared, grouped by package ID:")
-        for dd in disappeared_dict:
+        extras = []
+        for k,dd in enumerate(disappeared_dict):
             print("{}: {}".format(dd,', '.join(disappeared_dict[dd])))
+            extras.append("{}) {}: {}".format(k+1, dd, ', '.join(disappeared_dict[dd])))
 
+        msg = "Resources that disappeared, grouped by package ID: {}".format("; ".join(extras))
+        print(msg)
+        if alerts_on:
+            send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':clubs:')
         
     print("len(merged) = {}".format(len(merged)))
     old_harvest_linking_codes = list(set(old_harvest_linking_codes))
