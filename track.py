@@ -709,7 +709,7 @@ def stats(tracks=None):
     print("The shortest download URL ({}) has {} characters.".format(shortest_download_url,shortest_download_url_length))
 # end stats functions
 
-def inventory(alerts_on=False,speedmode=False,return_data=False,sizing_override=False):
+def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=False):
     current_rows, old_data, packages = fetch_live_resources(site,API_key,server,speedmode,sizing_override)
 
     merged = [] 
