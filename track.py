@@ -610,7 +610,10 @@ def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speed
 ### to make the code from inventory() removable.
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
 # the next line will only return non-private packages.
-    packages = ckan.action.current_package_list_with_resources(limit=999999)
+    try:
+        packages = ckan.action.current_package_list_with_resources(limit=999999)
+    except:
+        packages = ckan.action.current_package_list_with_resources(limit=999999)
     # This is a list of all the packages with all the resources nested inside and all the current information.
 
 #    old_data = load_resource_archive(site,API_key)
