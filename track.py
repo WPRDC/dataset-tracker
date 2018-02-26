@@ -843,6 +843,15 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 item = "<{}|{}> in {} from {}".format(current_row['resource_url'],current_row['resource_name'],current_row['package_name'],current_row['organization'])
                 printable = "{} ({}) in {} from {}".format(current_row['resource_name'],current_row['resource_url'],current_row['package_name'],current_row['organization'])
                 brand_new.append(item)
+
+                # Check if maybe this new resource might be only partially uploaded:
+                if 'rows' in current_row:
+                    if current_row['rows'] is not None and current_row['rows'] % 250 == 0:
+                        if current_row['download_url'][-3:].lower() in ['csv','xls','lsx']:
+                            warning = "<{}|{}> in {} has {} rows and the download URL ({}) makes it look like the file didn't completely upload.".format(current_row['resource_url'],current_row['resource_name'],current_row['package_name'],current_row['rows'],current_row['download_url'])
+                            print(warning)
+                            send_to_slack(warning,username='dataset-tracker',channel='@david',icon=':koolaid:')
+
                 try:
                     created_dt = datetime.strptime(current_row['created'],"%Y-%m-%dT%H:%M:%S.%f")
                 except ValueError:
