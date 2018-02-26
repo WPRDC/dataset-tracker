@@ -594,6 +594,20 @@ def check_links(tracks=None):
 
     store_resources_as_file(tracks,server)
 
+def check_for_partial_uploads(tracks=None):
+    """Check all active resources and note the ones that have a multiple of 250 rows and a CSV
+    or Excel download, as these are telltale signs of partial uploads (where MessyTables
+    incorrectly guessed some data type and the upload broke in the middle)."""
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+    for row in tracks:
+        # Check if maybe this resource might be only partially uploaded:
+        if 'active' in row and row['active']:
+            if 'rows' in row:
+                if row['rows'] is not None and row['rows'] % 250 == 0:
+                    if row['download_url'][-3:].lower() in ['csv','xls','lsx']:
+                        warning = "<{}|{}> in {} has {} rows and the download URL ({}) makes it look like the file didn't completely upload.".format(row['resource_url'],row['resource_name'],row['package_name'],row['rows'],row['download_url'])
+                        print(warning)
 
 def check_all(tracks=None):
     tracks = load_resources_from_file(server)
@@ -603,7 +617,7 @@ def check_all(tracks=None):
     check_links(tracks)
     check_live_licenses()
     find_empty_tables(tracks,False)
-
+    check_for_partial_uploads(tracks)
 
 def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speedmode=False,return_data=False,sizing_override=False):
 ### Think through what else needs to be moved around to make this self-contained and 
