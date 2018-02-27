@@ -903,6 +903,13 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
     store_resources_as_file(merged,server,current_rows[0].keys())
 
+    # This seems like an important enough check to stick it in here,
+    # but really maybe another function should be designed that 
+    # checks critical things and calls inventory and find_empty_tables
+    # and whatever else should be checked regularly.
+    if alerts_on:
+        find_empty_tables(merged,alerts_on)
+
     print("{} currently has {} and {}.".format(site,pluralize("dataset",packages),pluralize("resource",current_rows)))
     if return_data:
         return merged
