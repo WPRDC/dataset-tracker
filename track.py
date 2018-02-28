@@ -409,7 +409,7 @@ def find_empty_tables(tracks=None,alerts_on=False):
     items = []
     for k,r in enumerate(tracks):
         if 'cols' in r and r['cols'] is not None and 'rows' in r and r['cols'] is None:
-            print("{} in {} has no rows. It looks like the upload or ETL script broke. Here's the URL: {}".format(r['resource_id'], r['package_name'], r['resource_url']))
+            print("{} in {} has no rows and {} columns. It looks like the upload or ETL script broke. Here's the URL: {}".format(r['resource_id'], r['package_name'], r['cols'], r['resource_url']))
             item = "{} in {} ({})".format(r['format'],r['package_name'],r['resource_id'])
 
     if len(items) > 0:
