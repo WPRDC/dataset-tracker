@@ -420,6 +420,39 @@ def find_empty_tables(tracks=None,alerts_on=False):
     else:
         print("No empty tables found.")
 
+def find_duplicate_packages(live_only=True,tracks=None,alerts_on=False):
+    if tracks is None:
+        tracks = load_resources_from_file(server) 
+    items = [] 
+    id_by_index = {} 
+    name_by_index = {} 
+    for k,r in enumerate(tracks): 
+        include = False
+        if live_only: 
+            if 'active' in r and r['active']: 
+                include = True
+        else:
+            include = True
+
+        if include:
+            if r['package_name'] in name_by_index.values(): # The name has previously appeared.
+                if r['package_id'] not in id_by_index.values(): # But the ID has not.
+                    item = "{} ({}) is a duplicate package from {}".format(r['package_name'],r['package_id'],r['organization'])
+                    items.append(item)
+            id_by_index[k] = r['package_id']
+            name_by_index[k] = r['package_name']
+
+    if len(items) > 0:
+        intro = pluralize("duplicate package",items) + " found:" 
+        msg = intro + ", ".join(items)
+        if alerts_on:
+            send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':koolaid:')
+        print(intro)
+        for item in items:
+            print("  {}".format(item))
+    else:
+        print("No duplicate packages found.")
+
 def check_all_unknown_sizes(tracks=None):
     """This function hasn't been needed so far since the resources with unknown sizes tend to be either 
     links or missing files.
@@ -618,6 +651,7 @@ def check_all(tracks=None):
     check_live_licenses()
     find_empty_tables(tracks,False)
     check_for_partial_uploads(tracks)
+    find_duplicate_packages(True,tracks,False)
 
 def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speedmode=False,return_data=False,sizing_override=False):
 ### Think through what else needs to be moved around to make this self-contained and 
