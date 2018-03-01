@@ -825,7 +825,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 if datum['linking_code'] is not None:
                     old_harvest_linking_codes.append(datum['linking_code'])
             else:
-                # Generate one.
+                # Generate one (just for reference purposes, not to add to the old resource).
                 harvest_linking_code = generate_linking_code(datum)
                 if harvest_linking_code is not None:
                     old_harvest_linking_codes.append(harvest_linking_code)
