@@ -362,7 +362,8 @@ def update(record,x):
     # Update row counts, column counts, etc.
     modified_record['resource_name'] = x['resource_name'] # Keep resource names updated.
     modified_record['resource_url'] = x['resource_url']
-    modified_record['linking_code'] = x['linking_code']
+    #modified_record['linking_code'] = x['linking_code'] # Don't update linking codes.
+
     # The package name could easily change, so these URLs need to be updated.
     modified_record['package_url'] = x['package_url'] 
     modified_record['download_url'] = x['download_url']
