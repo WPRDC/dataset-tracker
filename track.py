@@ -128,7 +128,19 @@ def store_resources_as_file(rs,server,field_names_seed=None):
         # Make sure to get every possible field name (since some
         # JSON rows lack some fields).
         lists_of_field_names = [r.keys() for r in rs]
-        field_names = list(set(itertools.chain.from_iterable(lists_of_field_names)))
+        extracted_field_names = list(set(itertools.chain.from_iterable(lists_of_field_names))) # This approach gets
+        # all the field names, but fails to order them.
+        ckan_fields = ResourceTrackingSchema().serialize_to_ckan_fields()
+        ordered_fields = [cf['id'] for cf in ckan_fields]
+        
+        #print(set(extracted_field_names) - set(ordered_fields)) # Currently 'comments' is the only
+        # field that exists in the JSON file but is not present in the schema.
+        # [ ] We could take these leftover field names and tack them on to the end of 
+        # the field_names list in alphabetical order.
+
+        # Get order of field names from schema.
+        field_names = ordered_fields
+
     print("field_names = {}".format(field_names))
     target = PATH + "/resources.csv"
     write_to_csv(target,rs,field_names)
@@ -996,7 +1008,8 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
             send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':pineapple:')
         print(msg)
         #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
-    store_resources_as_file(merged,server,current_rows[0].keys())
+    #store_resources_as_file(merged,server,current_rows[0].keys())
+    store_resources_as_file(merged,server)
 
     # This seems like an important enough check to stick it in here,
     # but really maybe another function should be designed that 
