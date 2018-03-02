@@ -685,8 +685,9 @@ def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speed
     for p in packages:
         for r in p['resources']:
             current_row = extract_features(p,r,old_data,speedmode,sizing_override)
-            linking_code = generate_linking_code(current_row)
-            current_row['linking_code'] = linking_code
+            linking_code, link_type = generate_linking_code(current_row)
+            if link_type != 'manually added':
+                current_row['linking_code'] = linking_code
             list_of_odicts.append(current_row)
             print(".", end="", flush=True)
 
@@ -702,13 +703,14 @@ def generate_linking_code(tracked_resource):
 
     if 'loading_method' in tracked_resource and tracked_resource['loading_method'] == 'harvested':
         code = linking_code_template(tracked_resource)
-        return code
+        return code, 'harvested'
     elif 'comments' not in tracked_resource or tracked_resource['comments'] != 'Manually added':
-        return tracked_resource['resource_id']
+        return tracked_resource['resource_id'], 'manually added'
     else:
         assert 'linking_code' in tracked_resource
         code = tracked_resource['linking_code']
-        return code
+        return code, 'unchanged'
+
 # stats functions
 def identity(x):
     return x
@@ -826,7 +828,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                     old_harvest_linking_codes.append(datum['linking_code'])
             else:
                 # Generate one (just for reference purposes, not to add to the old resource).
-                harvest_linking_code = generate_linking_code(datum)
+                harvest_linking_code, _ = generate_linking_code(datum)
                 if harvest_linking_code is not None:
                     old_harvest_linking_codes.append(harvest_linking_code)
 
