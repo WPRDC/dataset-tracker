@@ -934,7 +934,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     if reharvest_count > 0:
         msg = "dataset-tracker observed that {} were reharvested.".format(pluralize("resource",None,reharvest_count))
         if alerts_on:
-            send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':tophat:')
+            send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':pineapple:')
         print(msg)
         #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
     store_resources_as_file(merged,server,current_rows[0].keys())
