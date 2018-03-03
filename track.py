@@ -1017,6 +1017,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     # and whatever else should be checked regularly.
     if alerts_on:
         find_empty_tables(merged,alerts_on)
+        find_duplicate_packages(True,merged,alerts_on)
 
     print("{} currently has {} and {}.".format(site,pluralize("dataset",packages),pluralize("resource",current_rows)))
     if return_data:
