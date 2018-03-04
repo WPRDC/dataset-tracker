@@ -782,6 +782,17 @@ def generate_linking_code(tracked_resource):
         code = tracked_resource['linking_code']
         return code, 'unchanged'
 
+def find_package_by_id(tracks,ref_id):
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+    matches = []
+    for r in tracks:
+        if r['package_id'] == ref_id:
+            matches.append(r) # Tracked resources with the reference package ID.
+
+    # Sort resources by resource name before returning.
+    return sorted(matches,key=lambda r: r['package_name'])
+
 # stats functions
 def identity(x):
     return x
