@@ -352,6 +352,9 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
         rows = columns = None
     elif resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
         rows = get_number_of_rows(site,resource['id'],API_key)
+        if rows is None: # We need to disambiguate the "None" returned by the 
+            rows = 0 # CKAN API when the table is empty from the "None" used
+            # by dataset-tracker to indicate there is no value in that field.
         schema = get_schema(site,resource['id'],API_key)
         if schema is None:
             columns = None
@@ -488,9 +491,10 @@ def find_empty_tables(tracks=None,alerts_on=False):
         tracks = load_resources_from_file(server)
     items = []
     for k,r in enumerate(tracks):
-        if 'cols' in r and r['cols'] is not None and 'rows' in r and r['cols'] is None:
-            print("{} in {} has no rows and {} columns. It looks like the upload or ETL script broke. Here's the URL: {}".format(r['resource_id'], r['package_name'], r['cols'], r['resource_url']))
+        if 'columns' in r and r['columns'] is not None and 'rows' in r and r['rows'] == 0:
+            print("{} in {} has no rows and {} columns. It looks like the upload or ETL script broke. Here's the URL: {}".format(r['resource_id'], r['package_name'], r['columns'], r['resource_url']))
             item = "{} in {} ({})".format(r['format'],r['package_name'],r['resource_id'])
+            items.append(item)
 
     if len(items) > 0:
         msg = pluralize("empty table",items) + " found:" + ", ".join(items)
@@ -1036,8 +1040,8 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     # checks critical things and calls inventory and find_empty_tables
     # and whatever else should be checked regularly.
     if alerts_on:
-        find_empty_tables(merged,alerts_on)
         find_duplicate_packages(True,merged,alerts_on)
+        find_empty_tables(merged,alerts_on)
 
     print("{} currently has {} and {}.".format(site,pluralize("dataset",packages),pluralize("resource",current_rows)))
     if return_data:
