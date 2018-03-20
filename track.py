@@ -276,6 +276,15 @@ def size_estimate(resource,old_tracks,force_sizing=False):
     except requests.exceptions.Timeout:
         print("Timed out while getting the head from {}".format(url))
         return None, True
+    except requests.exceptions.ConnectionError:
+        if 'resource_id' in resource:
+            id = resource['resource_id']
+        else:
+            id = 'No ID found in resource'
+        print("Got a requests.exceptions.ConnectionError while trying to estimate the size of {} ({})".format(name_of_resource(resource),id))
+        return None, False # <= This False value for sizing_attempted deviates from the convention used so far, but will make 
+            # it easier to spot the resources that are not getting sized.
+
     if response.status_code in [404]:
         return None, True
     if 'Content-Range' in response.headers:
