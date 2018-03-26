@@ -141,7 +141,7 @@ def store_resources_as_file(rs,server,field_names_seed=None):
         # Get order of field names from schema.
         field_names = ordered_fields
 
-    print("field_names = {}".format(field_names))
+    #print("field_names = {}".format(field_names))
     target = PATH + "/resources.csv"
     write_to_csv(target,rs,field_names)
     print("Just wrote {} rows to {} using these field names: {}".format(len(rs),target,field_names))
@@ -1021,7 +1021,6 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
             plural = (len(brand_new) != 1)
             msg = "In {}, dataset-tracker found {} {}: ".format(pluralize("package",current_package_ids), "these" if plural else "this", pluralize("entirely new resource",brand_new))
             msg += ', '.join(brand_new)
-        print(msg)
         if alerts_on:
             send_to_slack(msg,username='dataset-tracker',channel='#new-resources',icon=':tophat:')
             #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
