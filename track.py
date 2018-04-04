@@ -77,6 +77,34 @@ class ResourceTrackingSchema(pl.BaseSchema):
         if data['resource_name'] is None:
             data['resource_name'] = "Unnamed resource"
 
+period = {'Annually': timedelta(days = 366),
+        'Bi-Annually': timedelta(days = 183),
+        'Quarterly': timedelta(days = 31+30+31),
+        'Monthly': timedelta(days = 31),
+        'Bi-Monthly': timedelta(days = 16),
+        'Weekly': timedelta(days = 7),
+        'Bi-Weekly': timedelta(days = 4),
+        'Daily': timedelta(days = 1),
+        'Hourly': timedelta(hours = 1),
+        'Multiple Times per Hour': timedelta(minutes=30)}
+nonperiods = ['', 'As Needed', 'Not Updated (Historical Only)']
+# Some datasets are showing up as stale for one day because
+# (for instance) the County doesn't post jail census data
+# on a given day to their FTP server; our ETL script runs
+# but it doesn't update the metadata_modified.
+
+# One better solution to this would be to create a package-
+# (and maybe also resource-) level metadata field called
+# etl_job_last_ran.
+
+# For now, I'm hard-coding in a few exceptions.
+extensions = {'d15ca172-66df-4508-8562-5ec54498cfd4': {'title': 'Allegheny County Jail Daily Census',
+                'extra_time': timedelta(days=1),
+                'actual_data_source_reserve': timedelta(days=15)},
+              '046e5b6a-0f90-4f8e-8c16-14057fd8872e': {'title': 'Police Incident Blotter (30 Day)',
+                'extra_time': timedelta(days=1)}
+            }
+
 def write_to_csv(filename,list_of_dicts,keys):
     with open(filename, 'w', encoding='utf-8') as output_file:
         dict_writer = csv.DictWriter(output_file, keys, extrasaction='ignore', lineterminator='\n')
