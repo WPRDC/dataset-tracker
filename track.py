@@ -1,4 +1,4 @@
-import os, sys, re, csv, time, itertools, textwrap, ckanapi, random
+import os, sys, re, csv, time, itertools, textwrap, ckanapi, random, math
 import requests
 import shutil
 import fire
@@ -739,12 +739,44 @@ def check_links(tracks=None):
 
     store_resources_as_file(tracks,server)
 
+def get_terminal_size():
+    rows, columns = os.popen('stty size', 'r').read().split()
+    return int(rows), int(columns)
+
+def print_another_table(table):
+    if sys.stdout.isatty():
+        #Running from command line
+        rows, columns = get_terminal_size()
+
+        big_fields = 2
+        row_count_width = 10
+        big_width = int(math.floor((rows - row_count_width) / big_fields))
+        template = "{{:<{}.{}}}  {{:<{}.{}}}  {{:<{}}}"
+        fmt = template.format(big_width,big_width,big_width,big_width,row_count_width)
+        fmt = "{:<60.60}  {:<60.60}  {:>10}  {:<35.35}"
+
+        used_columns = len(fmt.format("aardvark","bumblebee",
+            "chupacabra","dragon","electric eel","flying rod",
+            "gorilla"))
+        border = "{}".format("="*used_columns)
+        print(fmt.format("Package name", "Resource name","Rows","Resource ID"))
+        print(border)
+
+        for d in table:
+            fields = [d['package_name'],d['resource_name'],d['rows'],d['resource_id']]
+
+            print(fmt.format(*fields))
+        print("{}\n".format(border))
+        print(fmt)
+
 def check_for_partial_uploads(tracks=None):
     """Check all active resources and note the ones that have a multiple of 250 rows and a CSV
     or Excel download, as these are telltale signs of partial uploads (where MessyTables
     incorrectly guessed some data type and the upload broke in the middle)."""
     if tracks is None:
         tracks = load_resources_from_file(server)
+
+    entries = []
     for row in tracks:
         # Check if maybe this resource might be only partially uploaded:
         if 'active' in row and row['active']:
@@ -753,6 +785,11 @@ def check_for_partial_uploads(tracks=None):
                     if row['download_url'][-3:].lower() in ['csv','xls','lsx']:
                         warning = "<{}|{}> in {} has {} rows and the download URL ({}) makes it look like the file didn't completely upload.".format(row['resource_url'],row['resource_name'],row['package_name'],row['rows'],row['download_url'])
                         print(warning)
+                        entry = {'resource_name': row['resource_name'], 'package_name': row['package_name'], 'rows': row['rows'], 'resource_id': row['resource_id']}
+                        entries.append(entry)
+    if len(entries) > 0:
+        print_another_table(entries)
+        
 
 def check_all(tracks=None):
     tracks = load_resources_from_file(server)
