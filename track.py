@@ -767,7 +767,6 @@ def print_another_table(table):
 
             print(fmt.format(*fields))
         print("{}\n".format(border))
-        print(fmt)
 
 def check_for_partial_uploads(tracks=None):
     """Check all active resources and note the ones that have a multiple of 250 rows and a CSV
@@ -777,6 +776,7 @@ def check_for_partial_uploads(tracks=None):
         tracks = load_resources_from_file(server)
 
     entries = []
+    zero_rows = 0
     for row in tracks:
         # Check if maybe this resource might be only partially uploaded:
         if 'active' in row and row['active']:
@@ -787,8 +787,13 @@ def check_for_partial_uploads(tracks=None):
                         print(warning)
                         entry = {'resource_name': row['resource_name'], 'package_name': row['package_name'], 'rows': row['rows'], 'resource_id': row['resource_id']}
                         entries.append(entry)
+
+                        if row['rows'] == 0:
+                            zero_rows += 1
     if len(entries) > 0:
+        print("")
         print_another_table(entries)
+        print("There are a total of {} resources that look like partial uploads. {} of these are 0-row resources".format(len(entries),zero_rows))
         
 
 def check_all(tracks=None):
