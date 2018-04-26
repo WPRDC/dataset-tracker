@@ -753,17 +753,17 @@ def print_another_table(table):
         big_width = int(math.floor((rows - row_count_width) / big_fields))
         template = "{{:<{}.{}}}  {{:<{}.{}}}  {{:<{}}}"
         fmt = template.format(big_width,big_width,big_width,big_width,row_count_width)
-        fmt = "{:<60.60}  {:<60.60}  {:>10}  {:<35.35}"
+        fmt = "{:<60.60}  {:<60.60}  {:>10} {:>4}  {:<35.35}"
 
         used_columns = len(fmt.format("aardvark","bumblebee",
             "chupacabra","dragon","electric eel","flying rod",
             "gorilla"))
         border = "{}".format("="*used_columns)
-        print(fmt.format("Package name", "Resource name","Rows","Resource ID"))
+        print(fmt.format("Package name", "Resource name" ,"Rows", "Cols", "Resource ID"))
         print(border)
 
         for d in table:
-            fields = [d['package_name'],d['resource_name'],d['rows'],d['resource_id']]
+            fields = [d['package_name'],d['resource_name'],d['rows'],d['columns'],d['resource_id']]
 
             print(fmt.format(*fields))
         print("{}\n".format(border))
@@ -785,7 +785,7 @@ def check_for_partial_uploads(tracks=None):
                     if row['download_url'][-3:].lower() in ['csv','xls','lsx']:
                         warning = "<{}|{}> in {} has {} rows and the download URL ({}) makes it look like the file didn't completely upload.".format(row['resource_url'],row['resource_name'],row['package_name'],row['rows'],row['download_url'])
                         print(warning)
-                        entry = {'resource_name': row['resource_name'], 'package_name': row['package_name'], 'rows': row['rows'], 'resource_id': row['resource_id']}
+                        entry = {'resource_name': row['resource_name'], 'package_name': row['package_name'], 'rows': row['rows'], 'columns': row['columns'] if row['columns'] is not None else '', 'resource_id': row['resource_id']}
                         entries.append(entry)
 
                         if row['rows'] == 0:
