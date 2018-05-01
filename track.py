@@ -884,14 +884,25 @@ def link_packages(source_id,receiver_id,tracks=None):
 
     source_resources = [r for r in find_package_by_id(tracks,source_id) if ('active' in r and r['active'])]
     receiver_resources = [r for r in find_package_by_id(tracks,receiver_id) if ('active' in r and r['active'])]
-    assert len(source_resources) == len(receiver_resources)
-    # We can only copy over linking codes if the source and receiver packages
-    # have the same resources.
+    
+    # We can only copy over linking codes if the receiver resources are a subset
+    # of the source resources.
 
-    for s,r in zip(source_resources,receiver_resources):
+    matched_source_resources = []
+    for rr in receiver_resources:
+        chosen_index = None
+        for k,sr in enumerate(source_resources):
+            if rr['resource_name'] == sr['resource_name']:
+                chosen_index = k
+        if chosen_index is None:
+            raise ValueError("Unable to find a source for the receiver resource {}".format(rr['resource_name']))
+        matched_source_resources.append(source_resources[chosen_index])
+
+    assert len(matched_source_resources) == len(receiver_resources)
+    for s,r in zip(matched_source_resources,receiver_resources):
         assert s['resource_name'] == r['resource_name']
 
-    for s,r in zip(source_resources,receiver_resources):
+    for s,r in zip(matched_source_resources,receiver_resources):
         print("Changing {}|{} to link to {}|{}.".format(r['package_id'],r['resource_name'],s['package_id'],s['resource_name']))
         prompt_for("Hit return to proceed")
         r['linking_code'] = str(s['linking_code'])
