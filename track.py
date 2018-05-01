@@ -876,6 +876,30 @@ def find_package_by_id(tracks,ref_id):
     # Sort resources by resource name before returning.
     return sorted(matches,key=lambda r: r['package_name'])
 
+def link_packages(source_id,receiver_id,tracks=None):
+    # Provide a command to link two datasets in a directed way (source and receiver)
+    # and then autocopy over all the linking codes.
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+
+    source_resources = [r for r in find_package_by_id(tracks,source_id) if ('active' in r and r['active'])]
+    receiver_resources = [r for r in find_package_by_id(tracks,receiver_id) if ('active' in r and r['active'])]
+    assert len(source_resources) == len(receiver_resources)
+    # We can only copy over linking codes if the source and receiver packages
+    # have the same resources.
+
+    for s,r in zip(source_resources,receiver_resources):
+        assert s['resource_name'] == r['resource_name']
+
+    for s,r in zip(source_resources,receiver_resources):
+        print("Changing {}|{} to link to {}|{}.".format(r['package_id'],r['resource_name'],s['package_id'],s['resource_name']))
+        prompt_for("Hit return to proceed")
+        r['linking_code'] = str(s['linking_code'])
+        # Modifying the object should modify the tracks
+        # data structure.
+
+    store_resources_as_file(tracks,server)
+
 # stats functions
 def identity(x):
     return x
