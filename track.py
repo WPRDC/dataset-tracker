@@ -533,6 +533,11 @@ def find_empty_tables(tracks=None,alerts_on=False):
         print("No empty tables found.")
 
 def find_duplicate_packages(live_only=True,tracks=None,alerts_on=False):
+    # This function is designed to find harvested resources that 
+    # are no longer getting updated (because they've been deleted
+    # from the source server but stick around as phantom datasets 
+    # on the data portal). 
+
     if tracks is None:
         tracks = load_resources_from_file(server) 
     items = [] 
@@ -977,6 +982,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     # the disappearance of which is ignored as normal.
 
 
+    ## BEGIN sizing ##
     if not speedmode and not sizing_override:
         # When it's OK for the code to take a while to run, size the 
         # n resources that most need sizing.
@@ -1017,6 +1023,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
             current_rows[k] = current_row # Should do nothing if current_row is the same
             # object as current_rows[k].
         #########
+    ## END sizing ##
 
 
 
@@ -1032,6 +1039,8 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 if harvest_linking_code is not None:
                     old_harvest_linking_codes.append(harvest_linking_code)
 
+
+        # BEGIN Deal with deleted resources or those that need to be updated. #
         if old_id not in current_resource_ids:
             #print("Keeping the following old resource: {} | {} | {}".format(old_id,datum['resource_name'],datum['organization']))
             if 'active' in datum and datum['active'] in ['True',True]:
@@ -1057,6 +1066,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
             processed_current_ids.append(old_id)
             # Here we merge all the current information about pre-existing resources with the tracking information
             # where possible. (It can't be done here for reharvests).
+        # END Deal with deleted resources or those that need to be updated. #
 
     if len(disappeared_dict) > 0:
         print("Resources that disappeared, grouped by package ID:")
@@ -1069,7 +1079,8 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         print(msg)
         if alerts_on:
             send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':clubs:')
-        
+
+    ## BEGIN Review and process live entries and add them to the merged list ##
     print("len(merged) = {}".format(len(merged)))
     old_harvest_linking_codes = list(set(old_harvest_linking_codes))
     print("len(processed_current_ids) = {}".format(len(processed_current_ids)))
@@ -1116,7 +1127,8 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 print(msg)
             merged.append(current_row) # Whether it's reharvested or not, it's 
             # got to be added as a resource to track, so that the resource IDs
-            # are known and can the URLs can be looked up in Google Analytics.
+            # are known and the URLs can be looked up in Google Analytics.
+    ## END Review and process live entries and add them to the merged list ##
     
     current_package_ids = list(set(current_package_ids))
     if len(brand_new) > 0:
@@ -1136,6 +1148,12 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
             send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':pineapple:')
         print(msg)
         #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
+
+        # * Observation of a harvest should trigger a check of all 
+        # active harvested resources from that organization.
+        # Any that are not reharvested should be noted and 
+        # a notification should be sent to Slack.
+
     #store_resources_as_file(merged,server,current_rows[0].keys())
     store_resources_as_file(merged,server)
 
