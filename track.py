@@ -970,6 +970,8 @@ def stats(tracks=None):
 def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=False):
     current_rows, old_data, packages = fetch_live_resources(site,API_key,server,speedmode,sizing_override)
 
+    live_package_lookup = {r['id']: p for p in packages for r in p['resources']}
+
     merged = [] 
     processed_current_ids = []
     # current_rows, old_data = fetch_live_resources(site,API_key,server,speedmode,sizing_override)
@@ -1061,6 +1063,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         # updated has been found.
             x = current_rows[current_resource_ids.index(old_id)]
             modified_datum = update(datum,x)
+            live_package = live_package_lookup[x['resource_id']]
             modified_datum['active'] = True
             merged.append(modified_datum)
             processed_current_ids.append(old_id)
