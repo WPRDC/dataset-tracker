@@ -463,6 +463,87 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
 
     return OrderedDict(r_tuples)
 
+
+def check_resource_for_growth(change_log,record,x,modified_record,live_package,now,last_seen):
+    now = datetime.now()
+    if 'rows' in x and 'rows' in record:
+        resource_name = record['resource_name']
+        package_name = record['package_name']
+
+        if x['rows'] is None:
+
+            # Maybe check if this one needs to be checked before getting the number of rows:
+            print("Getting the number of rows for {}|{} ({}) since x['rows'] = None.".format(resource_name,package_name,record['resource_id']))
+            x['rows'] = get_number_of_rows(site,x['resource_id'])
+        if x['rows'] is None:
+            print("  It looks like get_number_of_rows returned a value of None for {}".format(resource_name))
+            return modified_record, change_log
+        if record['rows'] != x['rows']:
+            # Either the resource has grown or shrunk.
+            print("   For {}, record['rows'] != x['rows']: {}!= {}".format(resource_name,record['rows'],x['rows']))
+            if 'last_modified' in record: # [ ] This should really be based on time_of_last_size_change.
+                timespan = (now - parse_time_isoformat(record['last_modified'])).total_seconds()/3600.0
+                if x['rows'] > record['rows']:
+                    print("      {} more rows which appeared at a rate of {} rows/hour".format(x['rows'] - record['rows'], (x['rows'] - record['rows'])/timespan))
+                else:
+                    print("      {} fewer rows, with rows disappearing at a rate of {} rows/hour".format(-x['rows'] + record['rows'], (-x['rows'] + record['rows'])/timespan))
+
+            change_log[record['resource_id']] = {'row_count_change': x['rows'] - record['rows'],
+                    'timespan_in_hours': timespan,
+                    'previously_modified': parse_time_isoformat(record['last_modified']),
+                    }
+            pprint(change_log[record['resource_id']])
+            time_of_last_size_change = now
+            modified_record['time_of_last_size_change'] = now.isoformat()
+        else:
+            # Check whether the duration between changes is too large.
+            if 'time_of_last_size_change' in record:
+                time_of_last_size_change = parse_time_isoformat(timestring=record['time_of_last_size_change'])
+
+                # Find live package by resource ID.
+                if 'frequency_publishing' in live_package.keys():
+                    publishing_frequency = live_package['frequency_publishing']
+                    if publishing_frequency in period:
+                        publishing_period = period[publishing_frequency]
+                    else:
+                        publishing_period = None
+                        if publishing_frequency not in nonperiods:
+                            raise ValueError("{}: {} is not a known publishing frequency".format(resource_name,publishing_frequency))
+                else:
+                    print('frequency_publishing is not specified for this package:')
+                    publishing_frequency = None
+                    publishing_period = None
+                if 'frequency_data_change' in live_package:
+                    data_change_rate = live_package['frequency_data_change']
+                else:
+                    data_change_rate = None
+                package_id = live_package['id']
+                if x['last_modified'] is None:
+                    resource_last_modified = None
+                else:
+                    resource_last_modified = parse_time_isoformat(x['last_modified'])
+
+                stale_resources = {}
+                stale_count = 0
+                #print("{} ({}) was last modified {} (according to its metadata). {}".format(resource_name,package_id,metadata_modified,package['frequency_publishing']))
+
+
+                if resource_last_modified is None:
+                    print("  What should we do when x['last_modified'] is None (like for this resource)?")
+                elif publishing_period is not None:
+                    lateness = now - (resource_last_modified + publishing_period)
+                    change_delay = now - (time_of_last_size_change + publishing_period) 
+                    print("      lateness = {}, while change_delay = {}".format(lateness, change_delay))
+                    if package_id in extensions.keys():
+                        if lateness.total_seconds() > 0 and lateness.total_seconds() < extensions[package_id]['extra_time'].total_seconds():
+                            print("{} is technically stale ({} cycles late), but we're giving it a pass because either there may not have been any new data to upsert or the next day's ETL job should fill in the gap.".format(resource_name,lateness.total_seconds()/publishing_period.total_seconds()))
+                        lateness -= extensions[package_id]['extra_time']
+
+                    if change_delay.total_seconds() > 0:
+                        print("  No change in the last publishing period ({}). change_delay = {}".format(publishing_period,change_delay))
+
+    return modified_record, change_log
+
 def update(change_log,record,x,live_package,speedmode):
     # record appears to be converted from the JSON file, so its dates need to be parsed,
     # whereas x comes from ckanapi and should be properly typed already.
