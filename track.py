@@ -361,6 +361,15 @@ def size_estimate(resource,old_tracks,force_sizing=False):
         # This next line should never need to be called:
         #return resource['size'], False # I think this should work both for CKAN API response resources and tracks.
 
+def parse_time_isoformat(timestring):
+    if type(timestring) != str:
+        raise ValueError("{} is not a string!".format(timestring))
+    try:
+        parsed_time = datetime.strptime(timestring,"%Y-%m-%dT%H:%M:%S.%f")
+    except ValueError: # isoformat sometimes outputs in the following format:
+        parsed_time = datetime.strptime(timestring,"%Y-%m-%dT%H:%M:%S")
+    return parsed_time
+
 def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_override=False):
     # speedmode can be set to False by the user, but presently this
     # can be overridden by situations like when we've seen the 
@@ -459,12 +468,18 @@ def update(record,x):
     assert record['package_id'] == x['package_id']
     assert record['created'] == x['created']
     # The linking code is presumed to be immutable, based on how it's being defined.
-    modified_record = OrderedDict(record)
-    try:
-        last_seen = datetime.strptime(record['last_seen'],"%Y-%m-%dT%H:%M:%S.%f")
-    except ValueError: # isoformat sometimes outputs in the following format:
-        last_seen = datetime.strptime(record['last_seen'],"%Y-%m-%dT%H:%M:%S")
+
+    last_seen = parse_time_isoformat(record['last_seen'])
     now = datetime.now()
+
+    modified_record = OrderedDict(record)
+    #if not speedmode: # In speed mode, row and column values aren't extracted,
+    #    # so it makes no sense to check for growth (or shrinking) of a resource.
+    if 'rows' in record and record['rows'] is not None:
+        modified_record, change_log = check_resource_for_growth(change_log,record,x,modified_record,live_package,now,last_seen)
+
+    #pprint(modified_record)
+
     modified_record['last_seen'] = now.isoformat()
     if last_seen.date() != now.date():
         modified_record['total_days_seen'] += 1
