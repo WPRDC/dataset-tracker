@@ -608,6 +608,38 @@ def check_package_for_growth(change_log,live_package,resources):
             publishing_frequency.lower()))
     return not stagnant
 
+
+def check_packages_for_growth(change_log,merged,live_package_by_id,modified_resources_lookup,processed_current_ids):
+    #deduplicated_package_ids = []
+    #for p_id in updated_package_ids:
+    #    if p_id not in deduplicated_package_ids:
+    #        deduplicated_package_ids.append(p_id)
+
+    updated_package_ids = modified_resources_lookup.keys()
+    deduplicated_package_ids = list(set(updated_package_ids))
+    active_resources_lookup = defaultdict(list)
+    for r in merged:
+        if 'active' in r and r['active']:
+            p_id = r['package_id']
+            if p_id in updated_package_ids:
+                active_resources_lookup[p_id].append(r)
+
+    for p_id,rs in active_resources_lookup.items():
+        if len(modified_resources_lookup[p_id]) != len(rs):
+            print("{}: {}/{}".format(rs[0]['package_name'],len(modified_resources_lookup[p_id]),len(rs)))
+
+    print("======= OK, checking packages for growth ==========")
+    growing_count = 0
+    stagnant_count = 0
+    for package_id in deduplicated_package_ids:
+        growing = check_package_for_growth(change_log,live_package_by_id[package_id],active_resources_lookup[package_id])
+        if growing is True:
+            growing_count += 1
+        elif growing is False:
+            stagnant_count += 1
+    print("Out of {} checked packages, {} are deemed to be growing/shrinking, while {} are considered to be stagnant.".format(len(deduplicated_package_ids),
+        growing_count, stagnant_count))
+
 def update(change_log,record,x,live_package,speedmode):
     # record appears to be converted from the JSON file, so its dates need to be parsed,
     # whereas x comes from ckanapi and should be properly typed already.
@@ -1247,6 +1279,26 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         print(msg)
         if alerts_on:
             send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':clubs:')
+    ## END Review all existing resources and look for updates from current_rows ##
+
+    ## BEGIN Review all live packages and check merged list for lack of growth ##
+    # At this point check_resource_for_growth has been run on all the 
+    # pre-existing resources that are being updated, and the 'time_of_last_size_change'
+    # field has been updated.
+    # Now, we can iterate through the live packages and check whether there's at
+    # least one resource in there that has been updated fast enough such that the
+    # resource can be considered to be growing.
+    # This might mean at least one new row during the last publishing period.
+
+    # Specific checks could also be included.
+    #if not speedmode:
+    check_packages_for_growth(change_log,merged,live_package_by_id,modified_resources_lookup,processed_current_ids)
+
+    # 'time_of_last_size_change' is the time that track.py observed a change in row count.
+    # 'last_modified' is the time that CKAN observed some kind of change to the resource.
+    ## END Review all live packages and check merged list for lack of growth ##
+
+    #raise ValueError('Under construction for check_for_growth.')
 
     ## BEGIN Review and process live entries and add them to the merged list ##
     print("len(merged) = {}".format(len(merged)))
