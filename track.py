@@ -40,6 +40,7 @@ class ResourceTrackingSchema(pl.BaseSchema):
     last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
     total_days_seen = fields.Integer(allow_none=True)
     last_modified = fields.DateTime(allow_none=True)
+    time_of_last_size_change = fields.DateTime(allow_none=True)
     active = fields.Boolean(allow_none=True)
     rows = fields.Integer(allow_none=True)
     columns = fields.Integer(allow_none=True)
