@@ -640,6 +640,18 @@ def check_packages_for_growth(change_log,merged,live_package_by_id,modified_reso
     print("Out of {} checked packages, {} are deemed to be growing/shrinking, while {} are considered to be stagnant.".format(len(deduplicated_package_ids),
         growing_count, stagnant_count))
 
+
+def reset_size_change_times(server):
+    tracks = load(server)
+    # Reset time_of_last_size_change values:
+    for record in tracks:
+        if 'time_of_last_size_change' in record: # Reset time_of_last_size_change values to more reasonable parameters.
+            del record['time_of_last_size_change']
+
+    store_resources_as_file(tracks,server)
+    print("Deleted time_of_last_size_change parameter from most tracked resources.")
+
+
 def update(change_log,record,x,live_package,speedmode):
     # record appears to be converted from the JSON file, so its dates need to be parsed,
     # whereas x comes from ckanapi and should be properly typed already.
