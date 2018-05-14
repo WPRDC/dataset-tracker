@@ -463,7 +463,9 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
 
     return OrderedDict(r_tuples)
 
-def update(record,x):
+def update(change_log,record,x,live_package,speedmode):
+    # record appears to be converted from the JSON file, so its dates need to be parsed,
+    # whereas x comes from ckanapi and should be properly typed already.
     assert record['resource_id'] == x['resource_id']
     assert record['package_id'] == x['package_id']
     assert record['created'] == x['created']
@@ -504,7 +506,7 @@ def update(record,x):
     modified_record['format'] = x['format']
     modified_record['tags'] = x['tags']
     modified_record['groups'] = x['groups']
-    return modified_record
+    return modified_record, change_log
 
 def domain(url):
     """Take a URL and return just the domain."""
@@ -1043,7 +1045,10 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     ## END sizing ##
 
 
-
+    ## BEGIN Review all existing resources and look for updates from current_rows ##
+    change_log = {}
+    resources_to_relink = []
+    modified_resources_lookup = defaultdict(list)
     for datum in old_data:
         old_id = datum['resource_id']
         if 'loading_method' in datum and datum['loading_method'] == 'harvested':
@@ -1077,8 +1082,8 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         else: # A case where an existing record needs to be 
         # updated has been found.
             x = current_rows[current_resource_ids.index(old_id)]
-            modified_datum = update(datum,x)
             live_package = live_package_lookup[x['resource_id']]
+            modified_datum,change_log = update(change_log,datum,x,live_package,speedmode)
             modified_datum['active'] = True
             merged.append(modified_datum)
             processed_current_ids.append(old_id)
