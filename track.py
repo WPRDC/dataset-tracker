@@ -545,6 +545,69 @@ def check_resource_for_growth(change_log,record,x,modified_record,live_package,n
 
     return modified_record, change_log
 
+def check_package_for_growth(change_log,live_package,resources):
+    # Check whether at least one of the resources in the package has
+    # had a size change in the last publishing period.
+    stagnant = True
+    now = datetime.now()
+
+    print("CHECKING {}".format(live_package['title']))
+
+    if 'frequency_publishing' not in live_package.keys():
+        #print("The package {} ({}) has no 'frequency_publishing' parameter.".format(live_package['title'],live_package['id']))
+        publishing_frequency = None
+        publishing_period = None
+        # For now, we will just ignore such packages, presuming that any that need to
+        # be monitored have a 'frequency_publishing' value.
+        return None
+    else:
+        publishing_frequency = live_package['frequency_publishing']
+
+        if publishing_frequency in period:
+            publishing_period = period[publishing_frequency]
+        else:
+            publishing_period = None
+            if publishing_frequency not in nonperiods:
+                raise ValueError("{}: {} is not a known publishing frequency".format(resource_name,publishing_frequency))
+            else:
+                # Packages that update with a nonperiod (like "As Needed") wind up here.
+                return None
+
+    for r in resources:
+
+        if 'time_of_last_size_change' in r and r['time_of_last_size_change'] is not None:
+            time_of_last_size_change = parse_time_isoformat(timestring=r['time_of_last_size_change'])
+
+            change_delay = now - (time_of_last_size_change + publishing_period) # This is 
+            # a measure of how overdue the package is for a change.
+
+            if change_delay.total_seconds() > 0:
+                #print("  No change in the last publishing period ({}). change_delay = {}".format(publishing_period,change_delay))
+                pass
+            else:
+                stagnant = False
+                print("     resource-level: {} has changed in row count during the last publishing period (i.e., faster than {})".format(r['resource_name'],
+                    publishing_frequency.lower()))
+                if r['resource_id'] in change_log.keys():
+                    previously_modified = change_log[r['resource_id']]['previously_modified']
+                    last_modified = parse_time_isoformat(r['last_modified'])
+                    row_count_change = change_log[r['resource_id']]['row_count_change']
+                    #print("last_modified = {}, type() = {}, previously_modified = {}, type() = {}".format(last_modified, type(last_modified), previously_modified, type(previously_modified)))
+                    rate_of_change = row_count_change/((last_modified - previously_modified).total_seconds())*3600
+                    print("         Using last_modified and previously_modified values, it looks like this resource has changed at a rate of {} rows/hour.".format(rate_of_change))
+                    # To accurately estimate rate of change, we need two values for row counts and
+                    # two corresponding timestamps (values of time_of_last_size_change), but if
+                    # we're scanning a lot, we're only going to catch those monthly size changes
+                    # once per month.
+
+        if not stagnant:
+            break
+
+    if stagnant:
+        print("* {} should update {} but seems to be stagnant. *".format(r['package_name'],
+            publishing_frequency.lower()))
+    return not stagnant
+
 def update(change_log,record,x,live_package,speedmode):
     # record appears to be converted from the JSON file, so its dates need to be parsed,
     # whereas x comes from ckanapi and should be properly typed already.
