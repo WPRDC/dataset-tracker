@@ -169,47 +169,61 @@ def pluralize(word,xs,count=None):
 def get_resources_filepath(server):
     return "{}/resources-{}.json".format(PATH,server)
 
-def load_resources_from_file(server):
-    resources_filepath = get_resources_filepath(server)
-    if os.path.exists(resources_filepath):
-        with open(resources_filepath,'r',encoding='utf-8') as f:
-            resources = loads(f.read())
-        # Also back up this file, so that any changes can be easily undone.
-        backup_filepath = '/'.join(resources_filepath.split('/')[:-1] + ['backup.json']) 
-        shutil.copy(resources_filepath, backup_filepath)
+def get_packages_filepath(server):
+    return "{}/packages-{}.json".format(PATH,server)
 
-        return resources
+def load_xs_from_file(server,filepath):
+    if os.path.exists(filepath):
+        with open(filepath,'r',encoding='utf-8') as f:
+            xs = loads(f.read())
+        # Also back up this file, so that any changes can be easily undone.
+        backup_filepath = '/'.join(filepath.split('/')[:-1] + ['backup.json']) 
+        shutil.copy(filepath, backup_filepath)
+
+        return xs
     else:
         return []
 
-def store_resources_as_file(rs,server,field_names_seed=None):
+def load_resources_from_file(server):
     resources_filepath = get_resources_filepath(server)
-    with open(resources_filepath,'w',encoding='utf-8') as f:
-        f.write(dumps(rs, indent=4))
+    return load_xs_from_file(server,resources_filepath)
+
+def load_packages_from_file(server):
+    packages_filepath = get_packages_filepath(server)
+    return load_xs_from_file(server,packages_filepath)
+
+def store_xs_as_file(xs,designation,server,filepath,Schema,field_names_seed = None):
+    with open(filepath,'w',encoding='utf-8') as f:
+        f.write(dumps(xs, indent=4))
 
     if field_names_seed is not None:
         field_names = field_names_seed
     else:
         # Make sure to get every possible field name (since some
         # JSON rows lack some fields).
-        lists_of_field_names = [r.keys() for r in rs]
-        extracted_field_names = list(set(itertools.chain.from_iterable(lists_of_field_names))) # This approach gets
-        # all the field names, but fails to order them.
-        ckan_fields = ResourceTrackingSchema().serialize_to_ckan_fields()
+        ckan_fields = Schema().serialize_to_ckan_fields()
         ordered_fields = [cf['id'] for cf in ckan_fields]
-        
+        # Get order of field names from schema.
+        field_names = ordered_fields
+
         #print(set(extracted_field_names) - set(ordered_fields)) # Currently 'comments' is the only
         # field that exists in the JSON file but is not present in the schema.
         # [ ] We could take these leftover field names and tack them on to the end of 
         # the field_names list in alphabetical order.
 
-        # Get order of field names from schema.
-        field_names = ordered_fields
+    target = "{}/{}.csv".format(PATH,designation)
+    write_to_csv(target,xs,field_names)
+    print("Just wrote {} rows to {} using these field names: {}".format(len(xs),target,field_names))
 
-    #print("field_names = {}".format(field_names))
-    target = PATH + "/resources.csv"
-    write_to_csv(target,rs,field_names)
-    print("Just wrote {} rows to {} using these field names: {}".format(len(rs),target,field_names))
+def store_resources_as_file(rs,server,field_names_seed=None):
+    resources_filepath = get_resources_filepath(server)
+    store_xs_as_file(rs,'resources',server,resources_filepath,
+            ResourceTrackingSchema)
+
+def store_packages_as_file(ps,server,field_names_seed=None):
+    packages_filepath = get_packages_filepath(server)
+    store_xs_as_file(ps,'packages',server,packages_filepath,
+            PackageTrackingSchema)
 
 def store(rs,server):
     return store_resources_as_file(rs,server)
