@@ -653,6 +653,35 @@ def reset_size_change_times(server):
     store_resources_as_file(tracks,server)
     print("Deleted time_of_last_size_change parameter from most tracked resources.")
 
+def set_resource_parameter(server,resource_id,parameter,value):
+    # Manually set the value of a parameter of one of the tracked resources
+    # in the JSON file (or wherever the store* function below stores the tracks.)
+    tracks = load(server)
+    for record in tracks:
+        if record['resource_id'] == resource_id:
+            unmodified_resource = dict(record)
+            converted_value = value #converted_value = guess_type_and_convert(value)
+            record[parameter] = converted_value
+            break
+    else:
+        raise ValueError("Unable to find resource ID {}".format(resource_id))
+
+    store_resources_as_file(tracks,server)
+   
+    u = unmodified_resource
+    if parameter in unmodified_resource.keys():
+        if u[parameter] == converted_value and type(u[parameter]) == type(converted_value):
+            # The type-checking is necessary because of an oddity wherein integer values
+            # (like 1) are considered equivalent to booleans (which should look like 
+            # true in the JSON output).:
+            print("The '{}' parameter of {} ({}) was already equal to {}.".format(parameter, 
+            u['resource_name'], u['resource_id'], converted_value))
+        else:    
+            print("Changed the '{}' parameter of {} ({}) from {} to {}.".format(parameter, 
+            u['resource_name'], u['resource_id'], u[parameter], converted_value))
+    else:
+        print("Added the '{}' parameter to {} ({}) with a value of {}.".format(parameter, 
+            u['resource_name'], u['resource_id'], converted_value))
 
 def update(change_log,record,x,live_package,speedmode):
     # record appears to be converted from the JSON file, so its dates need to be parsed,
