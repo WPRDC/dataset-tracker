@@ -591,14 +591,16 @@ def check_package_for_growth(change_log,live_package,resources):
                 if r['resource_id'] in change_log.keys():
                     previously_modified = change_log[r['resource_id']]['previously_modified']
                     last_modified = parse_time_isoformat(r['last_modified'])
-                    row_count_change = change_log[r['resource_id']]['row_count_change']
-                    #print("last_modified = {}, type() = {}, previously_modified = {}, type() = {}".format(last_modified, type(last_modified), previously_modified, type(previously_modified)))
-                    rate_of_change = row_count_change/((last_modified - previously_modified).total_seconds())*3600
-                    print("         Using last_modified and previously_modified values, it looks like this resource has changed at a rate of {} rows/hour.".format(rate_of_change))
-                    # To accurately estimate rate of change, we need two values for row counts and
-                    # two corresponding timestamps (values of time_of_last_size_change), but if
-                    # we're scanning a lot, we're only going to catch those monthly size changes
-                    # once per month.
+                    if previously_modified != last_modified:
+                        row_count_change = change_log[r['resource_id']]['row_count_change']
+                        #print("last_modified = {}, type() = {}, previously_modified = {}, type() = {}".format(last_modified, type(last_modified), previously_modified, type(previously_modified)))
+                        rate_of_change = row_count_change/((last_modified - previously_modified).total_seconds())*3600
+
+                        print("         Using last_modified and previously_modified values, it looks like this resource has changed at a rate of {} rows/hour.".format(rate_of_change))
+                        # To accurately estimate rate of change, we need two values for row counts and
+                        # two corresponding timestamps (values of time_of_last_size_change), but if
+                        # we're scanning a lot, we're only going to catch those monthly size changes
+                        # once per month.
 
         if not stagnant:
             break
