@@ -78,6 +78,42 @@ class ResourceTrackingSchema(pl.BaseSchema):
         if data['resource_name'] is None:
             data['resource_name'] = "Unnamed resource"
 
+class PackageTrackingSchema(pl.BaseSchema): 
+    package_id = fields.String(allow_none=False)
+    package_name = fields.String(allow_none=False)
+    organization =  fields.String(allow_none=False)
+    package_url = fields.String(allow_none=False)
+    active = fields.Boolean(allow_none=True)
+    tags = fields.String(allow_none=True)
+    groups = fields.String(allow_none=True)
+
+    # Never let any of the key fields have None values. It's just asking for
+    # multiplicity problems on upsert.
+    #as_of = fields.DateTime(dump_only=True,dump_to='as_of',default=datetime.datetime.now().isoformat())
+
+    # [Note that since this script is taking data from CSV files, there should be no
+    # columns with None values. It should all be instances like [value], [value],, [value],...
+    # where the missing value starts as as a zero-length string, which this script
+    # is then responsible for converting into something more appropriate.
+
+    class Meta:
+        ordered = True
+
+    # From the Marshmallow documentation:
+    #   Warning: The invocation order of decorated methods of the same
+    #   type is not guaranteed. If you need to guarantee order of different
+    #   processing steps, you should put them in the same processing method.
+    #@pre_load
+    #def fix_date(self, data):
+    #    data['first_published'] = datetime.strptime(data['first_published'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
+    #    data['first_seen'] = datetime.strptime(data['first_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
+    #    data['last_seen'] = datetime.strptime(data['last_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
+    @pre_load
+    def fix_name(self, data):
+        if data['resource_name'] is None:
+            data['resource_name'] = "Unnamed resource"
+
+
 period = {'Annually': timedelta(days = 366),
         'Bi-Annually': timedelta(days = 183),
         'Quarterly': timedelta(days = 31+30+31),
