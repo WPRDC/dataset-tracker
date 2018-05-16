@@ -215,15 +215,33 @@ def store_xs_as_file(xs,designation,server,filepath,Schema,field_names_seed = No
     write_to_csv(target,xs,field_names)
     print("Just wrote {} rows to {} using these field names: {}".format(len(xs),target,field_names))
 
+def store_packages_as_file(ps,server,field_names_seed=None):
+    packages_filepath = get_packages_filepath(server)
+    store_xs_as_file(ps,'packages',server,packages_filepath,
+            PackageTrackingSchema)
+
 def store_resources_as_file(rs,server,field_names_seed=None):
     resources_filepath = get_resources_filepath(server)
     store_xs_as_file(rs,'resources',server,resources_filepath,
             ResourceTrackingSchema)
 
-def store_packages_as_file(ps,server,field_names_seed=None):
-    packages_filepath = get_packages_filepath(server)
-    store_xs_as_file(ps,'packages',server,packages_filepath,
-            PackageTrackingSchema)
+    tracked_packages_dict = {}
+    for r in merged:
+        if r['package_id'] not in tracked_packages_dict.keys():
+            fields_to_extract = ['package_id', 'package_name',
+                    'organization', 'tags', 'groups', 'active',
+                    'package_url']
+            # loading_method will take some more work to convert.
+            tp = {}
+            for f in fields_to_extract:
+                if f in r:
+                    tp[f] = r[f]
+
+            tracked_packages_dict[r['package_id']] = tp
+
+    tracked_packages = [tp for tp in tracked_packages_dict.values()]
+
+    store_packages_as_file(tracked_packages,server)
 
 def store(rs,server):
     return store_resources_as_file(rs,server)
@@ -1467,24 +1485,11 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         # Any that are not reharvested should be noted and 
         # a notification should be sent to Slack.
 
+
+
+
+
     store_resources_as_file(merged,server)
-    tracked_packages_dict = {}
-    for r in merged:
-        if r['package_id'] not in tracked_packages_dict.keys():
-            fields_to_extract = ['package_id', 'package_name',
-                    'organization', 'tags', 'groups', 'active',
-                    'package_url']
-            # loading_method will take some more work to convert.
-            tp = {}
-            for f in fields_to_extract:
-                if f in r:
-                    tp[f] = r[f]
-
-            tracked_packages_dict[r['package_id']] = tp
-
-    tracked_packages = [tp for tp in tracked_packages_dict.values()]
-
-    store_packages_as_file(tracked_packages,server)
 
     # This seems like an important enough check to stick it in here,
     # but really maybe another function should be designed that 
