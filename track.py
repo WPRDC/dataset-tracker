@@ -226,7 +226,7 @@ def store_resources_as_file(rs,server,field_names_seed=None):
             ResourceTrackingSchema)
 
     tracked_packages_dict = {}
-    for r in merged:
+    for r in rs:
         if r['package_id'] not in tracked_packages_dict.keys():
             fields_to_extract = ['package_id', 'package_name',
                     'organization', 'tags', 'groups', 'active',
