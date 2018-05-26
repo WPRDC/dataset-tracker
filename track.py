@@ -227,17 +227,30 @@ def store_resources_as_file(rs,server,field_names_seed=None):
 
     tracked_packages_dict = {}
     for r in rs:
-        if r['package_id'] not in tracked_packages_dict.keys():
-            fields_to_extract = ['package_id', 'package_name',
-                    'organization', 'tags', 'groups', 'active',
-                    'package_url']
-            # loading_method will take some more work to convert.
-            tp = {}
+        package_id = r['package_id']
+        fields_to_extract = ['package_id', 'package_name',
+                'organization', 'tags', 'groups', 'active',
+                'package_url']
+        # loading_method will take some more work to convert.
+        tp = {}
+        for f in fields_to_extract:
+            if f in r:
+                tp[f] = r[f]
+
+        if package_id not in tracked_packages_dict.keys():
+            tracked_packages_dict[package_id] = tp
+        else:
             for f in fields_to_extract:
                 if f in r:
-                    tp[f] = r[f]
-
-            tracked_packages_dict[r['package_id']] = tp
+                    if type(r[f]) == bool:
+                        if f in tracked_packages_dict[package_id]:
+                            tracked_packages_dict[package_id][f] = r[f] or tracked_packages_dict[package_id][f]
+                        else:
+                            tracked_packages_dict[package_id][f] = r[f]
+                    elif f not in tracked_packages_dict[package_id]:
+                        tracked_packages_dict[package_id][f] = r[f]
+                    elif 'active' in r and r['active']: # Overwrite package values when looking at an active resource.
+                        tracked_packages_dict[package_id][f] = r[f]
 
     tracked_packages = [tp for tp in tracked_packages_dict.values()]
 
