@@ -192,7 +192,7 @@ def load_packages_from_file(server):
     packages_filepath = get_packages_filepath(server)
     return load_xs_from_file(server,packages_filepath)
 
-def store_xs_as_file(xs,designation,server,filepath,Schema,field_names_seed = None):
+def store_xs_as_file(xs,designation,filepath,Schema,field_names_seed = None):
     with open(filepath,'w',encoding='utf-8') as f:
         f.write(dumps(xs, indent=4))
 
@@ -215,14 +215,18 @@ def store_xs_as_file(xs,designation,server,filepath,Schema,field_names_seed = No
     write_to_csv(target,xs,field_names)
     print("Just wrote {} rows to {} using these field names: {}".format(len(xs),target,field_names))
 
-def store_packages_as_file(ps,server,field_names_seed=None):
-    packages_filepath = get_packages_filepath(server)
-    store_xs_as_file(ps,'packages',server,packages_filepath,
+def store_packages_as_file(ps,server,field_names_seed=None,filename_override=None):
+    if filename_override is None:
+        packages_filepath = get_packages_filepath(server)
+    else:
+        packages_filepath = "{}/packages-{}.json".format(PATH,server)
+
+    store_xs_as_file(ps,'packages',packages_filepath,
             PackageTrackingSchema)
 
 def store_resources_as_file(rs,server,field_names_seed=None):
     resources_filepath = get_resources_filepath(server)
-    store_xs_as_file(rs,'resources',server,resources_filepath,
+    store_xs_as_file(rs,'resources',resources_filepath,
             ResourceTrackingSchema)
 
     tracked_packages_dict = {}
