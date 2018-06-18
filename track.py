@@ -842,9 +842,13 @@ def find_empty_tables(tracks=None,alerts_on=False):
     items = []
     for k,r in enumerate(tracks):
         if 'columns' in r and r['columns'] is not None and 'rows' in r and r['rows'] == 0:
-            print("{} in {} has no rows and {} columns. It looks like the upload or ETL script broke. Here's the URL: {}".format(r['resource_id'], r['package_name'], r['columns'], r['resource_url']))
-            item = "{} in {} ({})".format(r['format'],r['package_name'],r['resource_id'])
-            items.append(item)
+            filter_function = lambda x : x['resource_id'] == str(r['resource_id'])
+            really_empty = check_row_count(filter_function, None)
+            if really_empty:
+                print("{} in {} has no rows and {} columns. It looks like the upload or ETL script broke. Here's the URL: {}".format(r['resource_id'], r['package_name'], r['columns'], r['resource_url']))
+                item = "{} in {} ({})".format(r['format'],r['package_name'],r['resource_id'])
+                items.append(item)
+
 
     if len(items) > 0:
         msg = pluralize("empty table",items) + " found:" + ", ".join(items)
@@ -891,6 +895,32 @@ def find_duplicate_packages(live_only=True,tracks=None,alerts_on=False):
             print("  {}".format(item))
     else:
         print("No duplicate packages found.")
+
+def check_row_count(filter_function,tracks=None):
+    # Check the sizes of all resources that make it through the filter function
+    # and update tracks accordingly.
+    if tracks is None:
+        tracks = load_resources_from_file(server)
+    updated_something = False
+    for k,r in enumerate(tracks):
+        if filter_function(r):
+            rows = get_number_of_rows(site,r['resource_id'],API_key)
+            now = datetime.now().isoformat()
+            if 'rows' in r:
+                if r['rows'] != rows:
+                    print("The row count of {} changed from {} to {}.".format(r['resource_name'],r['rows'],rows))
+                # Otherwise the size estimate has not changed, but we still need to update the last_sized field.
+            if rows is None:
+                print("The row count of {} couldn't be determined. It's listed as being in the {} format. Here's the download URL: {}".format(r['resource_id'], r['format'], r['resource_url']))
+                really_empty = True
+            else:
+                print("The row count of {} wasn't previously determined. It's listed as being in the {} format. It looks like it's actually {}".format(r['resource_id'], r['format'], rows))
+                really_empty = (rows == 0)
+            r['rows'] = rows
+            #r['last_sized'] = now # Do we need to track when the row count was made too?
+    store_resources_as_file(tracks,server)
+
+    return really_empty
 
 def check_all_unknown_sizes(tracks=None):
     """This function hasn't been needed so far since the resources with unknown sizes tend to be either 
