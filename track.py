@@ -1323,6 +1323,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     current_rows, old_data, packages = fetch_live_resources(site,API_key,server,speedmode,sizing_override)
 
     live_package_lookup = {r['id']: p for p in packages for r in p['resources']}
+    live_package_by_id = {p['id']: p for p in packages}
 
     merged = [] 
     processed_current_ids = []
