@@ -192,7 +192,7 @@ def load_packages_from_file(server):
     packages_filepath = get_packages_filepath(server)
     return load_xs_from_file(server,packages_filepath)
 
-def store_xs_as_file(xs,designation,filepath,Schema,field_names_seed = None):
+def store_xs_as_file(xs,designation,filepath,Schema,field_names_seed = None,filename_override=None):
     with open(filepath,'w',encoding='utf-8') as f:
         f.write(dumps(xs, indent=4))
 
@@ -210,8 +210,10 @@ def store_xs_as_file(xs,designation,filepath,Schema,field_names_seed = None):
         # field that exists in the JSON file but is not present in the schema.
         # [ ] We could take these leftover field names and tack them on to the end of 
         # the field_names list in alphabetical order.
-
-    target = "{}/{}.csv".format(PATH,designation)
+    if filename_override is None:
+        target = "{}/{}.csv".format(PATH,designation)
+    else:
+        target = "{}/{}.csv".format(PATH,filename_override)
     write_to_csv(target,xs,field_names)
     print("Just wrote {} rows to {} using these field names: {}".format(len(xs),target,field_names))
 
@@ -219,10 +221,10 @@ def store_packages_as_file(ps,server,field_names_seed=None,filename_override=Non
     if filename_override is None:
         packages_filepath = get_packages_filepath(server)
     else:
-        packages_filepath = "{}/packages-{}.json".format(PATH,server)
+        packages_filepath = "{}/{}.json".format(PATH,filename_override)
 
     store_xs_as_file(ps,'packages',packages_filepath,
-            PackageTrackingSchema)
+            PackageTrackingSchema,field_names_seed,filename_override)
 
 def store_resources_as_file(rs,server,field_names_seed=None):
     resources_filepath = get_resources_filepath(server)
