@@ -1454,12 +1454,26 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     # Specific checks could also be included.
     #if not speedmode:
     check_packages_for_growth(change_log,merged,live_package_by_id,modified_resources_lookup,processed_current_ids)
+    packages_from_file = load_packages_from_file(server)
 
     # 'time_of_last_size_change' is the time that track.py observed a change in row count.
     # 'last_modified' is the time that CKAN observed some kind of change to the resource.
     ## END Review all live packages and check merged list for lack of growth ##
 
     #raise ValueError('Under construction for check_for_growth.')
+
+    ## BEGIN Check for new packages ##
+    old_package_ids = [p['package_id'] for p in packages_from_file]
+
+    new_packages = []
+    for p_id,p in live_package_by_id.items():
+        if p_id not in old_package_ids:
+            new_packages.append(p)
+
+    print("new_packages = {}".format([np['package_name'] for np in new_packages]))
+
+    ## END Check for new packages ##
+
 
     ## BEGIN Review and process live entries and add them to the merged list ##
     print("len(merged) = {}".format(len(merged)))
