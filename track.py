@@ -1439,7 +1439,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         msg = "Resources that disappeared, grouped by package ID: {}".format("; ".join(extras))
         print(msg)
         if alerts_on:
-            send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':clubs:')
+            send_to_slack(msg,username='dataset-tracker',channel='#notifications',icon=':clubs:')
     ## END Review all existing resources and look for updates from current_rows ##
 
     ## BEGIN Review all live packages and check merged list for lack of growth ##
