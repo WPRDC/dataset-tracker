@@ -799,6 +799,7 @@ def update(change_log,record,x,live_package,speedmode):
     #modified_record['linking_code'] = x['linking_code'] # Don't update linking codes.
 
     # The package name could easily change, so these URLs need to be updated.
+    modified_record['package_name'] = x['package_name']
     modified_record['package_url'] = x['package_url'] 
     modified_record['download_url'] = x['download_url']
     modified_record['download_link_status'] = x['download_link_status']
