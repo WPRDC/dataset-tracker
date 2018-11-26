@@ -23,7 +23,7 @@ import pipeline as pl
 
 from marshmallow import fields, pre_load, post_load
 
-class ResourceTrackingSchema(pl.BaseSchema): 
+class ResourceTrackingSchema(pl.BaseSchema):
     resource_id = fields.String(allow_none=False)
     resource_name = fields.String(allow_none=False)
     package_id = fields.String(allow_none=False)
@@ -78,7 +78,7 @@ class ResourceTrackingSchema(pl.BaseSchema):
         if data['resource_name'] is None:
             data['resource_name'] = "Unnamed resource"
 
-class PackageTrackingSchema(pl.BaseSchema): 
+class PackageTrackingSchema(pl.BaseSchema):
     package_id = fields.String(allow_none=False)
     package_name = fields.String(allow_none=False)
     organization =  fields.String(allow_none=False)
@@ -177,7 +177,7 @@ def load_xs_from_file(server,filepath):
         with open(filepath,'r',encoding='utf-8') as f:
             xs = loads(f.read())
         # Also back up this file, so that any changes can be easily undone.
-        backup_filepath = '/'.join(filepath.split('/')[:-1] + ['backup.json']) 
+        backup_filepath = '/'.join(filepath.split('/')[:-1] + ['backup.json'])
         shutil.copy(filepath, backup_filepath)
 
         return xs
@@ -208,7 +208,7 @@ def store_xs_as_file(xs,designation,filepath,Schema,field_names_seed = None,file
 
         #print(set(extracted_field_names) - set(ordered_fields)) # Currently 'comments' is the only
         # field that exists in the JSON file but is not present in the schema.
-        # [ ] We could take these leftover field names and tack them on to the end of 
+        # [ ] We could take these leftover field names and tack them on to the end of
         # the field_names list in alphabetical order.
     if filename_override is None:
         target = "{}/{}.csv".format(PATH,designation)
@@ -323,7 +323,7 @@ def get_number_of_rows(site,resource_id,API_key=None):
     return count
 
 def get_schema(site,resource_id,API_key=None):
-    # On later versions of CKAN, it should be possible to do this using the 
+    # On later versions of CKAN, it should be possible to do this using the
     # datastore_info endpoint instead and taking the 'schema' part of the result.
     try:
         ckan = ckanapi.RemoteCKAN(site, apikey=API_key)
@@ -335,7 +335,7 @@ def get_schema(site,resource_id,API_key=None):
     return schema
 
 def sort_and_stringify_field(p,field,header):
-    # Sorting before converting fields to a string is a good idea because 
+    # Sorting before converting fields to a string is a good idea because
     # if you don't do it, the fields wind up strung together in a random
     # order (because this function uses sets to reduce a list to just the
     # unique values), making cross-file comparisons difficult.
@@ -360,10 +360,10 @@ def download_url_of_resource(resource):
 def size_estimate(resource,old_tracks,force_sizing=False):
     """Returns the size of the resource, when it's possible to determine it from the response
     to the HEAD call. Otherwise, it randomly decides whether to download the file and determine
-    the size that way. Else, it returns None (which it also does if it can't determine the 
+    the size that way. Else, it returns None (which it also does if it can't determine the
     file size for some other reason).
 
-    Thus, if this function is run to update the size, even if None is returned, it seems 
+    Thus, if this function is run to update the size, even if None is returned, it seems
     reasonable to update the last_sized timestamp.
 
     The second parameter returned indicates whether the function attempted to size the resource.
@@ -375,7 +375,7 @@ def size_estimate(resource,old_tracks,force_sizing=False):
         return None, True
     if 'url' in resource:
         url = resource['url']
-        resource_id = resource['id'] # 'id', not 'resource_id' 
+        resource_id = resource['id'] # 'id', not 'resource_id'
                   # since this is still the raw CKAN response.
     elif 'download_url' in resource:
         url = resource['download_url']
@@ -383,8 +383,8 @@ def size_estimate(resource,old_tracks,force_sizing=False):
     else:
         return None, True
 
-    if url == 'http://#':   # Handle local convention for 
-        return None, True  # disabling downloading of big 
+    if url == 'http://#':   # Handle local convention for
+        return None, True  # disabling downloading of big
                             # tables in the datastore.
 
     try:
@@ -398,7 +398,7 @@ def size_estimate(resource,old_tracks,force_sizing=False):
         else:
             id = 'No ID found in resource'
         print("Got a requests.exceptions.ConnectionError while trying to estimate the size of {} ({})".format(name_of_resource(resource),id))
-        return None, False # <= This False value for sizing_attempted deviates from the convention used so far, but will make 
+        return None, False # <= This False value for sizing_attempted deviates from the convention used so far, but will make
             # it easier to spot the resources that are not getting sized.
 
     if response.status_code in [404]:
@@ -415,7 +415,7 @@ def size_estimate(resource,old_tracks,force_sizing=False):
         # Determine whether size is known from old_tracks.
         size_is_known = False
         for t in old_tracks:
-            if t['resource_id'] == resource_id: 
+            if t['resource_id'] == resource_id:
                 if 'size' in t and t['size'] is not None:
                     size_is_known = True
         size_it = (random.random() < 0.1 - 0.05*size_is_known) or force_sizing
@@ -460,7 +460,7 @@ def parse_time_isoformat(timestring):
 
 def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_override=False):
     # speedmode can be set to False by the user, but presently this
-    # can be overridden by situations like when we've seen the 
+    # can be overridden by situations like when we've seen the
     # resource today.
 
     speedmode = bool(speedmode_seed)
@@ -477,7 +477,7 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
         rows = columns = None
     elif resource['format'] in ['CSV','csv','.csv']: #'XLSX','XLS']:
         rows = get_number_of_rows(site,resource['id'],API_key)
-        if rows is None: # We need to disambiguate the "None" returned by the 
+        if rows is None: # We need to disambiguate the "None" returned by the
             rows = 0 # CKAN API when the table is empty from the "None" used
             # by dataset-tracker to indicate there is no value in that field.
         schema = get_schema(site,resource['id'],API_key)
@@ -504,7 +504,7 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
         if re.search('data dictionary',resource_name,re.IGNORECASE) is not None or resource['format'] in ['HTML','html']:
             loading_method = 'manual'
         else:
-            loading_method = 'etl' 
+            loading_method = 'etl'
     elif '_harvested' in tags:
         loading_method = 'harvested'
     else:
@@ -620,7 +620,7 @@ def check_resource_for_growth(change_log,record,x,modified_record,live_package,n
                     print("  What should we do when x['last_modified'] is None (like for this resource)?")
                 elif publishing_period is not None:
                     lateness = now - (resource_last_modified + publishing_period)
-                    change_delay = now - (time_of_last_size_change + publishing_period) 
+                    change_delay = now - (time_of_last_size_change + publishing_period)
                     print("      lateness = {}, while change_delay = {}".format(lateness, change_delay))
                     if package_id in extensions.keys():
                         if lateness.total_seconds() > 0 and lateness.total_seconds() < extensions[package_id]['extra_time'].total_seconds():
@@ -665,7 +665,7 @@ def check_package_for_growth(change_log,live_package,resources):
         if 'time_of_last_size_change' in r and r['time_of_last_size_change'] is not None:
             time_of_last_size_change = parse_time_isoformat(timestring=r['time_of_last_size_change'])
 
-            change_delay = now - (time_of_last_size_change + publishing_period) # This is 
+            change_delay = now - (time_of_last_size_change + publishing_period) # This is
             # a measure of how overdue the package is for a change.
 
             if change_delay.total_seconds() > 0:
@@ -754,20 +754,20 @@ def set_resource_parameter(server,resource_id,parameter,value):
         raise ValueError("Unable to find resource ID {}".format(resource_id))
 
     store_resources_as_file(tracks,server)
-   
+
     u = unmodified_resource
     if parameter in unmodified_resource.keys():
         if u[parameter] == converted_value and type(u[parameter]) == type(converted_value):
             # The type-checking is necessary because of an oddity wherein integer values
-            # (like 1) are considered equivalent to booleans (which should look like 
+            # (like 1) are considered equivalent to booleans (which should look like
             # true in the JSON output).:
-            print("The '{}' parameter of {} ({}) was already equal to {}.".format(parameter, 
+            print("The '{}' parameter of {} ({}) was already equal to {}.".format(parameter,
             u['resource_name'], u['resource_id'], converted_value))
-        else:    
-            print("Changed the '{}' parameter of {} ({}) from {} to {}.".format(parameter, 
+        else:
+            print("Changed the '{}' parameter of {} ({}) from {} to {}.".format(parameter,
             u['resource_name'], u['resource_id'], u[parameter], converted_value))
     else:
-        print("Added the '{}' parameter to {} ({}) with a value of {}.".format(parameter, 
+        print("Added the '{}' parameter to {} ({}) with a value of {}.".format(parameter,
             u['resource_name'], u['resource_id'], converted_value))
 
 def update(change_log,record,x,live_package,speedmode):
@@ -800,7 +800,7 @@ def update(change_log,record,x,live_package,speedmode):
 
     # The package name could easily change, so these URLs need to be updated.
     modified_record['package_name'] = x['package_name']
-    modified_record['package_url'] = x['package_url'] 
+    modified_record['package_url'] = x['package_url']
     modified_record['download_url'] = x['download_url']
     modified_record['download_link_status'] = x['download_link_status']
     modified_record['last_modified'] = x['last_modified']
@@ -862,20 +862,20 @@ def find_empty_tables(tracks=None,alerts_on=False):
         print("No empty tables found.")
 
 def find_duplicate_packages(live_only=True,tracks=None,alerts_on=False):
-    # This function is designed to find harvested resources that 
+    # This function is designed to find harvested resources that
     # are no longer getting updated (because they've been deleted
-    # from the source server but stick around as phantom datasets 
-    # on the data portal). 
+    # from the source server but stick around as phantom datasets
+    # on the data portal).
 
     if tracks is None:
-        tracks = load_resources_from_file(server) 
-    items = [] 
-    id_by_index = {} 
-    name_by_index = {} 
-    for k,r in enumerate(tracks): 
+        tracks = load_resources_from_file(server)
+    items = []
+    id_by_index = {}
+    name_by_index = {}
+    for k,r in enumerate(tracks):
         include = False
-        if live_only: 
-            if 'active' in r and r['active']: 
+        if live_only:
+            if 'active' in r and r['active']:
                 include = True
         else:
             include = True
@@ -889,7 +889,7 @@ def find_duplicate_packages(live_only=True,tracks=None,alerts_on=False):
             name_by_index[k] = r['package_name']
 
     if len(items) > 0:
-        intro = pluralize("duplicate package",items) + " found:" 
+        intro = pluralize("duplicate package",items) + " found:"
         msg = intro + ", ".join(items)
         if alerts_on:
             send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':koolaid:')
@@ -926,7 +926,7 @@ def check_row_count(filter_function,tracks=None):
     return really_empty
 
 def check_all_unknown_sizes(tracks=None):
-    """This function hasn't been needed so far since the resources with unknown sizes tend to be either 
+    """This function hasn't been needed so far since the resources with unknown sizes tend to be either
     links or missing files.
 
     This function hasn't been tested recently, and will likely break on dead resources."""
@@ -963,7 +963,7 @@ def check_live_licenses():
     # 1) We only care about whether active resources have licenses.
     # 2) It's a pain to go back and deal with the inactive resources for which license information has not been tracked.
     # 3) Maybe it's better to put such functions in pocket-watch and leave archive or crossover stuff to dataset-tracker.
-    #   *) Currently, pocket-watch is very minimalistic with no use of the fire library, so queries of the live site 
+    #   *) Currently, pocket-watch is very minimalistic with no use of the fire library, so queries of the live site
     #      will probably stay in dataset-tracker for a while.
 
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
@@ -1060,7 +1060,7 @@ def check_links(tracks=None):
                 if response.status_code == 404:
                     items.append(print_and_format(r['resource_name'],durl))
                 # Other responses to consider:
-                # 202 ACCEPTED The request has been accepted for processing, but the processing has not been completed. The request might or might not eventually be acted upon, as it might be disallowed when processing actually takes place. The 202 response is intentionally noncommittal. The representation sent with this response ought to describe the request's current status and point to (or embed) a status monitor that can provide the user with an estimate of when the request will be fulfilled. 
+                # 202 ACCEPTED The request has been accepted for processing, but the processing has not been completed. The request might or might not eventually be acted upon, as it might be disallowed when processing actually takes place. The 202 response is intentionally noncommittal. The representation sent with this response ought to describe the request's current status and point to (or embed) a status monitor that can provide the user with an estimate of when the request will be fulfilled.
                 # For example, one link resulted in this response:
                 #   // 20180118105744
                 #    // https://pghgis-pittsburghpa.opendata.arcgis.com/datasets/34735757b7384fde97960cc01c4f3318_0.geojson
@@ -1068,7 +1068,7 @@ def check_links(tracks=None):
                 #      "processingTime": "2.2493333333333334 minutes",
                 #      "status": "Failed",
                 #      "generating": {
-                #        
+                #
                 #      },
                 #      "error": {
                 #        "message": "Service returned count of 0",
@@ -1080,7 +1080,7 @@ def check_links(tracks=None):
 
                 # The HTTP 204 No Content success status response code indicates that the request has succeeded, but that the client doesn't need to go away from its current page. (Links with this response seem to load just fine.)
                 # The HTTP 302 Found redirect status response code indicates that the resource requested has been temporarily moved to the URL given by the Location header.
-                # The HyperText Transfer Protocol (HTTP) 308 Permanent Redirect redirect status response code indicates that the resource requested has been definitively moved to the URL given by the Location headers. 
+                # The HyperText Transfer Protocol (HTTP) 308 Permanent Redirect redirect status response code indicates that the resource requested has been definitively moved to the URL given by the Location headers.
                 # The HTTP 401 Unauthorized client error status response code indicates that the request has not been applied because it lacks valid authentication credentials for the target resource.
 
                 # 500 Internal Server Error
@@ -1154,7 +1154,7 @@ def check_for_partial_uploads(tracks=None):
         print("")
         print_another_table(entries)
         print("There are a total of {} resources that look like partial uploads. {} of these are 0-row resources".format(len(entries),zero_rows))
-        
+
 
 def check_all(tracks=None):
     tracks = load_resources_from_file(server)
@@ -1168,7 +1168,7 @@ def check_all(tracks=None):
     find_duplicate_packages(True,tracks,False)
 
 def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speedmode=False,return_data=False,sizing_override=False):
-### Think through what else needs to be moved around to make this self-contained and 
+### Think through what else needs to be moved around to make this self-contained and
 ### to make the code from inventory() removable.
     ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
 # the next line will only return non-private packages.
@@ -1194,7 +1194,7 @@ def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speed
 
     for p in packages:
         if p['id'] not in old_package_ids:
-            print("{} ({}) is not being tracked.".format(p['title'],p['id']))
+            print("{} ({}) has not been tracked yet.".format(p['title'],p['id']))
 
     for p in packages:
         for r in p['resources']:
@@ -1211,8 +1211,8 @@ def linking_code_template(datum):
     return datum['package_id'] + ' | ' + datum['resource_name']
 
 def generate_linking_code(tracked_resource):
-    # This function generates effective IDs to link together different resources that contain 
-    # the same information. (There are a bunch of these because of how the CKAN harvest 
+    # This function generates effective IDs to link together different resources that contain
+    # the same information. (There are a bunch of these because of how the CKAN harvest
     # extension works.)
 
     if 'loading_method' in tracked_resource and tracked_resource['loading_method'] == 'harvested':
@@ -1328,21 +1328,21 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     live_package_lookup = {r['id']: p for p in packages for r in p['resources']}
     live_package_by_id = {p['id']: p for p in packages}
 
-    merged = [] 
+    merged = []
     processed_current_ids = []
     # current_rows, old_data = fetch_live_resources(site,API_key,server,speedmode,sizing_override)
     print("len(current_rows) = {}".format(len(current_rows)))
     current_resource_ids = [r['resource_id'] for r in current_rows]
     old_harvest_linking_codes = []
-    disappeared_dict = defaultdict(list) # A dictionary that lists formatted message strings about each 
-    # resource that has just disappeared in this iteration (based on whether it has just 
+    disappeared_dict = defaultdict(list) # A dictionary that lists formatted message strings about each
+    # resource that has just disappeared in this iteration (based on whether it has just
     # flipped to inactive), under a key equal to the package ID, except for harvested resources,
     # the disappearance of which is ignored as normal.
 
 
     ## BEGIN sizing ##
     if not speedmode and not sizing_override:
-        # When it's OK for the code to take a while to run, size the 
+        # When it's OK for the code to take a while to run, size the
         # n resources that most need sizing.
         resources_to_size = 5
         ###### Sizing code intended to size code that most needs sizing
@@ -1359,7 +1359,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 sizing_dates.append(date_sized)
         sds = sizing_dates
         simply_sorted_sds, indices = zip(*sorted(zip(sizing_dates,range(0,len(sizing_dates))), key=lambda w: w[0]))
-        # Such sorting is not the most efficient algorithm, but it will do when the number of rows is 
+        # Such sorting is not the most efficient algorithm, but it will do when the number of rows is
         # as small as it is.
         # If 'last_sized' is None, we should definitely prioritize sizing it since
         # even a failed attempt should update the 'last_sized' field.
@@ -1410,7 +1410,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 package_key = "{} [{}]".format(datum['package_name'], datum['package_id'])
                 if 'loading_method' in datum and datum['loading_method'] == 'harvested':
                     # [ ] If this resource is a harvested resource and goes inactive,
-                    # its disappearance need not be noted here, though it would be 
+                    # its disappearance need not be noted here, though it would be
                     # useful to eventually use this opportunity to automatically link
                     # those resources with the newly created ones in the same package.
                     pass
@@ -1418,7 +1418,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                     disappeared_dict[package_key].append(d_msg)
                 datum['active'] = False
             merged.append(datum)
-        else: # A case where an existing record needs to be 
+        else: # A case where an existing record needs to be
         # updated has been found.
             x = current_rows[current_resource_ids.index(old_id)]
             live_package = live_package_lookup[x['resource_id']]
@@ -1444,7 +1444,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     ## END Review all existing resources and look for updates from current_rows ##
 
     ## BEGIN Review all live packages and check merged list for lack of growth ##
-    # At this point check_resource_for_growth has been run on all the 
+    # At this point check_resource_for_growth has been run on all the
     # pre-existing resources that are being updated, and the 'time_of_last_size_change'
     # field has been updated.
     # Now, we can iterate through the live packages and check whether there's at
@@ -1491,7 +1491,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
             # However, harvested resources that have new resource IDs but are otherwise the same as previous resources need to be identified.
             reharvested = False
             if current_row['loading_method'] == 'harvested':
-                if current_row['linking_code'] in old_harvest_linking_codes: 
+                if current_row['linking_code'] in old_harvest_linking_codes:
                     reharvested = True
 
             if reharvested:
@@ -1514,18 +1514,18 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 except ValueError:
                     created_dt = datetime.strptime(current_row['created'],"%Y-%m-%dT%H:%M:%S")
                 if datetime.now() - created_dt < timedelta(days = 6):
-                    current_row['first_published'] = current_row['created'] 
+                    current_row['first_published'] = current_row['created']
                 else: # Some resources were created long ago and only recently published.
-                    current_row['first_published'] = current_row['first_seen'] 
+                    current_row['first_published'] = current_row['first_seen']
 
                 current_package_ids.append(current_row['package_id'])
                 msg = "dataset-tracker found an entirely new resource: " + printable
                 print(msg)
-            merged.append(current_row) # Whether it's reharvested or not, it's 
+            merged.append(current_row) # Whether it's reharvested or not, it's
             # got to be added as a resource to track, so that the resource IDs
             # are known and the URLs can be looked up in Google Analytics.
     ## END Review and process live entries and add them to the merged list ##
-    
+
     current_package_ids = list(set(current_package_ids))
     if len(brand_new) > 0:
         if len(brand_new) == 1:
@@ -1545,9 +1545,9 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         print(msg)
         #send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':tophat:')
 
-        # * Observation of a harvest should trigger a check of all 
+        # * Observation of a harvest should trigger a check of all
         # active harvested resources from that organization.
-        # Any that are not reharvested should be noted and 
+        # Any that are not reharvested should be noted and
         # a notification should be sent to Slack.
 
 
@@ -1557,7 +1557,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     store_resources_as_file(merged,server)
 
     # This seems like an important enough check to stick it in here,
-    # but really maybe another function should be designed that 
+    # but really maybe another function should be designed that
     # checks critical things and calls inventory and find_empty_tables
     # and whatever else should be checked regularly.
     if alerts_on:
@@ -1572,7 +1572,7 @@ def force_sizing():
     # This script prefers speedmode, since obtaining the dimensions for all the data tables and
     # sizes for some of the files takes (for some reason) routinely over half an hour (maybe one
     # request tends to hang for a long time), whereas speedmode requires only one request.
-    # But sometimes we need to slowly go through and update a bunch of sizes. This is the 
+    # But sometimes we need to slowly go through and update a bunch of sizes. This is the
     # function that does that.
     inventory(False,False,False,True)
 
@@ -1586,7 +1586,7 @@ def upload():
     #fields0.pop(fields0.index({'type': 'text', 'id': 'party_name'}))
     #fields0.append({'id': 'assignee', 'type': 'text'})
     fields_to_publish = fields0
-    print("fields_to_publish = {}".format(fields_to_publish)) 
+    print("fields_to_publish = {}".format(fields_to_publish))
 
     print("site = {}, package_id = {}, API_key = {}".format(site,package_id,API_key))
     _, domain = site.split("://")
@@ -1600,13 +1600,13 @@ def upload():
     testing = False
     if not testing:
         list_of_dicts = inventory(False,False,True,False)
-    else: # Use the below entry for rapid testing (since it takes so long 
+    else: # Use the below entry for rapid testing (since it takes so long
           # to compile the real results.
-        list_of_dicts = [{'package_id': 'Squornshellous Zeta', 'package_name': 'text', 
+        list_of_dicts = [{'package_id': 'Squornshellous Zeta', 'package_name': 'text',
             'organization': 'text', 'created': '2000-01-10T11:01:10.101010',
-            'first_published': '2010-04-13T09:15:11.0', 
-            'first_seen': '2010-04-13T09:15:11.0', 'last_seen': '2010-04-13T09:15:11.0', 
-            'total_days_seen': 1, 'resource_id': 'Hypertext', 
+            'first_published': '2010-04-13T09:15:11.0',
+            'first_seen': '2010-04-13T09:15:11.0', 'last_seen': '2010-04-13T09:15:11.0',
+            'total_days_seen': 1, 'resource_id': 'Hypertext',
             'resource_name': 'sought it with forks', 'rows': 8, 'columns': 1502,
             'size': None, 'format': 'TSV', 'resource_url': 'https://zombo.com',
             'package_url': 'https://deranged.millionaire.com', 'groups': 'Limbo'}]
@@ -1639,7 +1639,7 @@ def upload():
               key_fields=['resource_id'],
               method=piping_method,
               **kwargs).run()
-    
+
     log = open('uploaded.log', 'w+')
     if specify_resource_by_name:
         print("Piped data to {} on {} ({}).".format(kwargs['resource_name'],site,server))
