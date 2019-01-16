@@ -1471,6 +1471,11 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         if p_id not in old_package_ids:
             new_packages.append(p)
 
+    for np in new_packages:
+        if 'package_name' not in np:
+            print("This package has no 'package_name' field:")
+            pprint(np)
+
     print("new_packages = {}".format([np['package_name'] for np in new_packages if 'package_name' in np]))
 
     ## END Check for new packages ##
