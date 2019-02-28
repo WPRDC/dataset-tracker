@@ -1754,7 +1754,16 @@ with open(SETTINGS_FILE) as f:
     package_id = settings["loader"][server]["package_id"]
 
 if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        inventory() # Make this the default.
-    else:
-        fire.Fire()
+    try:
+        if len(sys.argv) == 1:
+            inventory() # Make this the default.
+        else:
+            fire.Fire()
+    except:
+        e = sys.exc_info()[0]
+        msg = "Error: {} : \n".format(e)
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        msg = ''.join('!! ' + line for line in lines)
+        print(msg) # Log it or whatever here
+        send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':illuminati:')
