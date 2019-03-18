@@ -144,7 +144,7 @@ extensions = {'d15ca172-66df-4508-8562-5ec54498cfd4': {'title': 'Allegheny Count
 
 def pause(delay=None):
     if delay is None:
-        time.sleep(0.1)
+        time.sleep(0.5)
     else:
         time.sleep(delay)
 
