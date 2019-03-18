@@ -397,7 +397,7 @@ def size_estimate(resource,old_tracks,force_sizing=False):
 
     try:
         response = requests.head(url,timeout=60)
-        pause(0.01)
+        pause()
     except requests.exceptions.Timeout:
         print("Timed out while getting the head from {}".format(url))
         return None, True
@@ -434,7 +434,7 @@ def size_estimate(resource,old_tracks,force_sizing=False):
 
             try:
                 r2 = requests.get(url,timeout=60)
-                pause(0.01)
+                pause()
             except requests.exceptions.Timeout:
                 print("Timed out while getting {}".format(url))
                 return resource['size'], True
