@@ -1,5 +1,5 @@
 import os, sys, re, csv, time, itertools, textwrap, ckanapi, random, math
-import requests
+import requests, time, traceback
 import shutil
 import fire
 
@@ -141,6 +141,11 @@ extensions = {'d15ca172-66df-4508-8562-5ec54498cfd4': {'title': 'Allegheny Count
               '046e5b6a-0f90-4f8e-8c16-14057fd8872e': {'title': 'Police Incident Blotter (30 Day)',
                 'extra_time': timedelta(days=1)}
             }
+
+def pause(delay=None):
+    if delay is None:
+        time.sleep(0.1)
+    time.sleep(delay)
 
 def write_to_csv(filename,list_of_dicts,keys):
     with open(filename, 'w', encoding='utf-8') as output_file:
@@ -317,6 +322,7 @@ def get_number_of_rows(site,resource_id,API_key=None):
         # must be greater than zero for this query to get the 'total' field to appear in
         # the API response.
         count = results_dict['total']
+        pause()
     except:
         return None
 
@@ -329,6 +335,7 @@ def get_schema(site,resource_id,API_key=None):
         ckan = ckanapi.RemoteCKAN(site, apikey=API_key)
         results_dict = ckan.action.datastore_search(resource_id=resource_id,limit=0)
         schema = results_dict['fields']
+        pause()
     except:
         return None
 
@@ -389,6 +396,7 @@ def size_estimate(resource,old_tracks,force_sizing=False):
 
     try:
         response = requests.head(url,timeout=60)
+        pause(0.01)
     except requests.exceptions.Timeout:
         print("Timed out while getting the head from {}".format(url))
         return None, True
@@ -425,6 +433,7 @@ def size_estimate(resource,old_tracks,force_sizing=False):
 
             try:
                 r2 = requests.get(url,timeout=60)
+                pause(0.01)
             except requests.exceptions.Timeout:
                 print("Timed out while getting {}".format(url))
                 return resource['size'], True
