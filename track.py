@@ -145,7 +145,8 @@ extensions = {'d15ca172-66df-4508-8562-5ec54498cfd4': {'title': 'Allegheny Count
 def pause(delay=None):
     if delay is None:
         time.sleep(0.1)
-    time.sleep(delay)
+    else:
+        time.sleep(delay)
 
 def write_to_csv(filename,list_of_dicts,keys):
     with open(filename, 'w', encoding='utf-8') as output_file:
