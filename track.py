@@ -1333,14 +1333,19 @@ def stats(tracks=None):
 # end stats functions
 
 def utf8_encode(x):
-    if x is None:
-        return "None"
-    if type(x) in [int, float]:
-        return str(x)
     try:
-        return x.encode('utf-8')
-    except AttributeError:
-        return "<Some weird variable that utf8_encode can't handle>"
+        return str(x)
+    except:
+        if x is None:
+            return "None"
+        if type(x) in [int, float]:
+            return str(x)
+        if type(x) in [list]:
+            return [utf8_encode(i) for i in x]
+        try:
+            return x.encode('utf-8')
+        except AttributeError:
+            return "<Some weird variable (of type {}) that utf8_encode can't handle>".format(x)
 
 def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=False):
     current_rows, old_data, packages = fetch_live_resources(site,API_key,server,speedmode,sizing_override)
