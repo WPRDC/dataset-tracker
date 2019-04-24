@@ -1332,6 +1332,16 @@ def stats(tracks=None):
     print("The shortest download URL ({}) has {} characters.".format(shortest_download_url,shortest_download_url_length))
 # end stats functions
 
+def utf8_encode(x):
+    if x is None:
+        return "None"
+    if type(x) in [int, float]:
+        return str(x)
+    try:
+        return x.encode('utf-8')
+    except AttributeError:
+        return "<Some weird variable that utf8_encode can't handle>"
+
 def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=False):
     current_rows, old_data, packages = fetch_live_resources(site,API_key,server,speedmode,sizing_override)
 
@@ -1488,7 +1498,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 pprint(np) # This sometimes fails, like if there's unprintable Unicode in the package description.
             except UnicodeEncodeError:
                 for k,v in np.items():
-                    print("{}: {}".format(k.encode('utf-8'),v.encode('utf-8')))
+                    print("{}: {}".format(utf8_encode(k),utf8_encode(v)))
 
     print("new_packages = {}".format([np['package_name'] for np in new_packages if 'package_name' in np]))
 
