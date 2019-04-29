@@ -646,6 +646,7 @@ def check_package_for_growth(change_log,live_package,resources):
     # Check whether at least one of the resources in the package has
     # had a size change in the last publishing period.
     stagnant = True
+    maybe_bogus = False #
     now = datetime.now()
 
     print("CHECKING {}".format(live_package['title']))
@@ -698,14 +699,19 @@ def check_package_for_growth(change_log,live_package,resources):
                         # two corresponding timestamps (values of time_of_last_size_change), but if
                         # we're scanning a lot, we're only going to catch those monthly size changes
                         # once per month.
+        else:
+            since_row_tracking_started = now - datetime(2018,5,14,21,51,49)
+            if since_row_tracking_started.total_seconds() < publishing_period.total_seconds():
+                maybe_bogus = True
 
         if not stagnant:
             break
 
     if stagnant:
-        print("* {} should update {} but seems to be stagnant. *".format(r['package_name'],
-            publishing_frequency.lower()))
-    return not stagnant
+        print("* {} should update {} but seems to be stagnant{}. *".format(r['package_name'],
+            publishing_frequency.lower(),
+            " (BUT we haven't been tracking long enough to be sure)" if maybe_bogus else ""))
+    return not stagnant #, maybe_bogus
 
 
 def check_packages_for_growth(change_log,merged,live_package_by_id,modified_resources_lookup,processed_current_ids):
@@ -730,14 +736,24 @@ def check_packages_for_growth(change_log,merged,live_package_by_id,modified_reso
     print("======= OK, checking packages for growth ==========")
     growing_count = 0
     stagnant_count = 0
+    maybe_stagnant_count = 0
+    maybe_bogus = False
+    growing_package_ids = []
     for package_id in deduplicated_package_ids:
+        #growing, maybe_bogus = check_package_for_growth(change_log,live_package_by_id[package_id],active_resources_lookup[package_id])
         growing = check_package_for_growth(change_log,live_package_by_id[package_id],active_resources_lookup[package_id])
         if growing is True:
             growing_count += 1
+            growing_package_ids.append(package_id)
         elif growing is False:
-            stagnant_count += 1
-    print("Out of {} checked packages, {} are deemed to be growing/shrinking, while {} are considered to be stagnant.".format(len(deduplicated_package_ids),
-        growing_count, stagnant_count))
+            if maybe_bogus:
+                maybe_stagnant_count += 1
+            else:
+                stagnant_count += 1
+    print("Out of {} checked packages, {} are deemed to be growing/shrinking, while {} are considered to be stagnant and {} are undecided.".format(len(deduplicated_package_ids),
+        growing_count, stagnant_count, maybe_stagnant_count))
+
+    return growing_package_ids
 
 
 def reset_size_change_times(server):
