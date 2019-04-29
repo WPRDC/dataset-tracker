@@ -579,18 +579,18 @@ def check_resource_for_growth(change_log,record,x,modified_record,live_package,n
         if record['rows'] != x['rows']:
             # Either the resource has grown or shrunk.
             print("   For {}, record['rows'] != x['rows']: {}!= {}".format(resource_name,record['rows'],x['rows']))
-            if 'last_modified' in record: # [ ] This should really be based on time_of_last_size_change.
+            if 'last_modified' in record and record['last_modified'] is not None: # [ ] This should really be based on time_of_last_size_change.
                 timespan = (now - parse_time_isoformat(record['last_modified'])).total_seconds()/3600.0
                 if x['rows'] > record['rows']:
                     print("      {} more rows which appeared at a rate of {} rows/hour".format(x['rows'] - record['rows'], (x['rows'] - record['rows'])/timespan))
                 else:
                     print("      {} fewer rows, with rows disappearing at a rate of {} rows/hour".format(-x['rows'] + record['rows'], (-x['rows'] + record['rows'])/timespan))
 
-            change_log[record['resource_id']] = {'row_count_change': x['rows'] - record['rows'],
-                    'timespan_in_hours': timespan,
-                    'previously_modified': parse_time_isoformat(record['last_modified']),
-                    }
-            pprint(change_log[record['resource_id']])
+                change_log[record['resource_id']] = {'row_count_change': x['rows'] - record['rows'],
+                        'timespan_in_hours': timespan,
+                        'previously_modified': parse_time_isoformat(record['last_modified']),
+                        }
+                pprint(change_log[record['resource_id']])
             time_of_last_size_change = now
             modified_record['time_of_last_size_change'] = now.isoformat()
         else:
