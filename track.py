@@ -1495,8 +1495,24 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
 
     # Specific checks could also be included.
     #if not speedmode:
-    check_packages_for_growth(change_log,merged,live_package_by_id,modified_resources_lookup,processed_current_ids)
     packages_from_file = load_packages_from_file(server)
+
+    ## Commenting out checks for package growth (as pocketwatchdog should handle this in the future).
+    #growing_package_ids = check_packages_for_growth(change_log,merged,live_package_by_id,modified_resources_lookup,processed_current_ids)
+
+    #growing_packages = []
+    #for p in packages_from_file:
+    #    if p['package_id'] in growing_package_ids:
+    #        growing_packages.append(p)
+    #        growing_package_ids.remove(p['package_id'])
+
+    #for gpid in growing_package_ids:
+    #    growing_packages.append({'package_id': gpid})
+
+    #timestamp = datetime.now().strftime("%Y-%m-%dT%H%M")
+    #filename = "growing/growing-{}".format(timestamp)
+    #store_packages_as_file(growing_packages,server=filename,field_names_seed=['package_id','package_name','organization','package_url','active'],filename_override=filename)
+    ## END checks for package growth
 
     # 'time_of_last_size_change' is the time that track.py observed a change in row count.
     # 'last_modified' is the time that CKAN observed some kind of change to the resource.
