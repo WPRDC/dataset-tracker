@@ -9,8 +9,9 @@ from pprint import pprint
 from json import loads, dumps
 import json
 from collections import OrderedDict, defaultdict
-from parameters.local_parameters import SETTINGS_FILE, PATH
+from parameters.local_parameters import SETTINGS_FILE, PATH, BACKUP_DATA
 from notify import send_to_slack
+from backup_util import backup_to_disk
 
 #abspath = os.path.abspath(__file__)
 #dname = os.path.dirname(abspath)
@@ -1419,7 +1420,11 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                         current_row['last_sized'] = datetime.now().isoformat()
                 else:
                     current_row['last_sized'] = datetime.now().isoformat()
-
+            if BACKUP_DATA:
+                current_row = backup_to_disk(current_row) # For now, just backup files when they're sized.
+            # Eventually maybe use a smarter schedule, backing up files based on how many update cycles
+            # the last backup and current version differ by (either based on nominal publication
+            # frequency or one inferred from row count or timestamps in the live data).
             current_rows[k] = current_row # Should do nothing if current_row is the same
             # object as current_rows[k].
         #########
