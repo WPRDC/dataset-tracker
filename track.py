@@ -4,6 +4,7 @@ import shutil
 import fire
 
 from datetime import datetime, timedelta
+from dateutil import parser
 from pprint import pprint
 from json import loads, dumps
 import json
@@ -86,7 +87,7 @@ class PackageTrackingSchema(pl.BaseSchema):
     active = fields.Boolean(allow_none=True)
     tags = fields.String(allow_none=True)
     groups = fields.String(allow_none=True)
-
+    resources_last_modified = fields.String(allow_none=True)
     # Never let any of the key fields have None values. It's just asking for
     # multiplicity problems on upsert.
     #as_of = fields.DateTime(dump_only=True,dump_to='as_of',default=datetime.datetime.now().isoformat())
