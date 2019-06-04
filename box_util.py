@@ -1,9 +1,9 @@
 import os, json, time
 from datetime import datetime
-from boxsdk import OAuth2, Client
+from boxsdk import OAuth2, Client #, JWTAuth
 
-from parameters.local_parameters import SETTINGS_FILE
-from gadgets import open_a_channel, write_to_csv, get_all_records, get_site, get_fields, get_metadata 
+from parameters.local_parameters import SETTINGS_FILE #, BOX_AUTH_SETTINGS_FILE
+from gadgets import open_a_channel, write_to_csv, get_all_records, get_site, get_fields, get_metadata
 
 
 from parameters.credentials import YOUR_CLIENT_ID, YOUR_CLIENT_SECRET, YOUR_DEVELOPER_TOKEN
@@ -16,18 +16,33 @@ client = Client(auth)
 
 user = client.user().get()
 
+# As usual, authentication is complex. One option is a "service account" which by default stores files
+# in a place other than user accounts. However, one can make the service account a collaborator on
+# a folder in one's Box account:
+
+# https://community.box.com/t5/Platform-and-Development-Forum/How-to-add-service-account-as-collaborator-on-user-folder/td-p/61445
+#auth = JWTAuth.from_settings_file(BOX_AUTH_SETTINGS_FILE)
+#client = Client(auth)
+#service_account = client.user().get()
+
+# The service-account/JWT authentication is useless because it requires that the enterprise
+# admin business console settings allow authorization of apps
+#       https://developer.box.com/docs/setting-up-a-jwt-app
+# which is not allowed for this programmer's account.
+# This leaves OAuth options or manually generating and adding a 1-hour developer token.
+# Both options require too much manual interaction.
 
 def create_box_folder(client,folder,folder_name):
 # https://github.com/box/box-python-sdk/blob/master/docs/usage/folders.md#create-a-folder
-    """A folder can be created by calling folder.create_subfolder(name) on the 
-    parent folder with the name of the subfolder to be created. This method 
+    """A folder can be created by calling folder.create_subfolder(name) on the
+    parent folder with the name of the subfolder to be created. This method
     returns a new Folder representing the created subfolder."""
     #subfolder = client.folder('0').create_subfolder(folder_name) # Create sub-folder of parent folder
     subfolder = client.folder(folder_id=folder.id).create_subfolder(folder_name) # Create sub-folder of parent folder
     return subfolder
 
 def get_all_items_in_folder(folder):
-    """The Box SDK has a limitation; get_items calls must include a limit parameter, and 
+    """The Box SDK has a limitation; get_items calls must include a limit parameter, and
     apparently no more than 1000 items can be retrieved in a call. This function works
     around this limit."""
     all_items = []
@@ -86,7 +101,7 @@ def download_resource_file(resource_record,filename=None):
     script_path = os.path.realpath(__file__)
     base_dir = '/'.join(script_path.split('/')[:-1])
     path = base_dir + '/tmp/'
-    if not os.path.exists(path): 
+    if not os.path.exists(path):
         os.mkdir(path)
 
     list_of_dicts = get_all_records(site, r_id, API_key, chunk_size=5000)
@@ -108,7 +123,7 @@ def download_resource_file(resource_record,filename=None):
     return filepath, metapath
 
 def upload_resource_to_box(destination_folder,resource_record):
-    """This function looks at the resource and decides how to get its data 
+    """This function looks at the resource and decides how to get its data
     from the CKAN instance to Box. In some cases, this might mean downloading the
     file to a temporary file and then uploading it. In other cases the file URL
     from CKAN might be providable more directly to Box."""
@@ -119,10 +134,10 @@ def upload_resource_to_box(destination_folder,resource_record):
     assert file_path != metadata_file_path
     uploaded_file = destination_folder.upload(file_path, file_name=None, preflight_check=False, preflight_expected_size=0)
     uploaded_metadata_file = destination_folder.upload(metadata_file_path, file_name=None, preflight_check=False, preflight_expected_size=0)
-    # By default, the file uploaded to Box will have the same file name as the 
-    # one on disk; you can override this by passing a different name in the 
-    # file_name parameter. You can, optionally, also choose to set a file 
-    # description upon upload by using the file_description parameter. This 
+    # By default, the file uploaded to Box will have the same file name as the
+    # one on disk; you can override this by passing a different name in the
+    # file_name parameter. You can, optionally, also choose to set a file
+    # description upon upload by using the file_description parameter. This
     # method returns a File object representing the newly-uploaded file.
 
     # [ ] To upload a file from a readable stream, call folder.upload_stream(file_stream, file_name, file_description=None, preflight_check=False, preflight_expected_size=0) with the stream and a name for the file.
