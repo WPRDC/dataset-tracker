@@ -871,7 +871,7 @@ def find_empty_tables(tracks=None,alerts_on=False):
         tracks = load_resources_from_file(server)
     items = []
     for k,r in enumerate(tracks):
-        if 'columns' in r and r['columns'] is not None and 'rows' in r and r['rows'] == 0:
+        if ('active' in r and r['active']) and 'columns' in r and r['columns'] is not None and 'rows' in r and r['rows'] == 0:
             filter_function = lambda x : x['resource_id'] == str(r['resource_id'])
             really_empty = check_row_count(filter_function, None)
             if really_empty:
