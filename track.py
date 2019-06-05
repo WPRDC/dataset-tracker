@@ -5,7 +5,6 @@ import fire
 
 from datetime import datetime, timedelta
 from dateutil import parser
-from pprint import pprint
 from json import loads, dumps
 import json
 from collections import OrderedDict, defaultdict
@@ -155,6 +154,26 @@ def write_to_csv(filename,list_of_dicts,keys):
         dict_writer = csv.DictWriter(output_file, keys, extrasaction='ignore', lineterminator='\n')
         dict_writer.writeheader()
         dict_writer.writerows(list_of_dicts)
+
+def smart_pprint(x):
+    from pprint import pprint
+    try:
+        pprint(x)
+    except UnicodeEncodeError:
+        # There's some annoying non-ASCII character in whatever we're trying to print.
+        string_representation = x.__str__
+        ascii_string = ''
+        ascii_set = '~1234567890-=qwertyuiop[]\\asdfghjkl;zxcvbnm,./~!@$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:"ZXCVBNM<>?'
+        ascii_set += '\#'
+        ascii_set += "'"
+        for c in string_representation:
+            if c in ascii_set:
+                ascii_string += c
+            else:
+                ascii_string += '?'
+        print(ascii_string)
+
+        # We could also try print(x)
 
 def print_table(rs):
     template = "{{:<6.6}}... {{:<15.15}}  {{:<10.10}}  {}  {{:<12}}"
@@ -592,7 +611,7 @@ def check_resource_for_growth(change_log,record,x,modified_record,live_package,n
                         'timespan_in_hours': timespan,
                         'previously_modified': parse_time_isoformat(record['last_modified']),
                         }
-                pprint(change_log[record['resource_id']])
+                smart_pprint(change_log[record['resource_id']])
             time_of_last_size_change = now
             modified_record['time_of_last_size_change'] = now.isoformat()
         else:
@@ -815,7 +834,7 @@ def update(change_log,record,x,live_package,speedmode):
     if 'rows' in record and record['rows'] is not None:
         modified_record, change_log = check_resource_for_growth(change_log,record,x,modified_record,live_package,now,last_seen)
 
-    #pprint(modified_record)
+    #smart_pprint(modified_record)
 
     modified_record['last_seen'] = now.isoformat()
     if last_seen.date() != now.date():
@@ -1013,7 +1032,7 @@ def check_live_licenses():
                 unlicensed.append(p)
 
     print("Distribution of licenses by package:")
-    pprint(dict(license_counts))
+    smart_pprint(dict(license_counts))
     if len(items) > 0:
         msg = "{} without licenses found: ".format(pluralize('package',items), ", ".join(items))
         print(msg)
@@ -1538,10 +1557,10 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         if 'package_name' not in np:
             print("This package has no 'package_name' field:")
             try:
-                pprint(np) # This sometimes fails, like if there's unprintable Unicode in the package description.
+                smart_pprint(np) # pprint sometimes fails, like if there's unprintable Unicode in the package description.
             except UnicodeEncodeError:
                 for k,v in np.items():
-                    print("{}: {}".format(utf8_encode(k),utf8_encode(v)))
+                    print("{}: {}".format(utf8_encode(k),utf8_encode(v))) # It's possible that a solution like this is better than smart_pprint
 
     print("new_packages = {}".format([np['package_name'] for np in new_packages if 'package_name' in np]))
 
