@@ -1444,7 +1444,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 smart_pprint(np) # pprint sometimes fails, like if there's unprintable Unicode in the package description.
             except UnicodeEncodeError:
                 for k,v in np.items():
-                    print("{}: {}".format(utf8_encode(k),utf8_encode(v))) # It's possible that a solution like this is better than smart_pprint
+                    print("{}: {}".format(utf8_encode(k),utf8_encode(v))) # This also throws UnicodeEncodeErrors sometimes, so maybe it's a bad fallback.
 
     print("new_packages = {}".format([np['package_name'] for np in new_packages if 'package_name' in np]))
 
