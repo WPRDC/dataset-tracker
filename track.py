@@ -259,6 +259,8 @@ def store_resources_as_file(rs,server,field_names_seed=None):
             ResourceTrackingSchema)
 
     tracked_packages_dict = {}
+
+    last_modified_by_package = defaultdict(list)
     for r in rs:
         package_id = r['package_id']
         fields_to_extract = ['package_id', 'package_name',
@@ -266,6 +268,18 @@ def store_resources_as_file(rs,server,field_names_seed=None):
                 'package_url']
         # loading_method will take some more work to convert.
         tp = {}
+
+        if 'last_modified' in r:
+            r_last_modified = r['last_modified']
+            print("r_last_modified = {}".format(r_last_modified))
+            if r_last_modified is not None:
+                try:
+                    r_last_modified_date = parser.parse(r_last_modified)
+                    last_modified_by_package[package_id].append(r_last_modified_date)
+                    print("added r_last_modified_date: {}".format(r_last_modified_date))
+                except AttributeError:
+                    print("Unable to parse {} as a date/datetime.".format(r_last_modified))
+
         for f in fields_to_extract:
             if f in r:
                 tp[f] = r[f]
@@ -286,6 +300,14 @@ def store_resources_as_file(rs,server,field_names_seed=None):
                         tracked_packages_dict[package_id][f] = r[f]
 
     tracked_packages = [tp for tp in tracked_packages_dict.values()]
+    for tp in tracked_packages:
+        p_id = tp['package_id']
+        if p_id in last_modified_by_package:
+            most_recent_date = max(last_modified_by_package[p_id])
+            tp['resources_last_modified'] = most_recent_date.isoformat()
+            print("tp['resources_last_modified'] = {}".format(tp['resources_last_modified']))
+        else:
+            tp['resources_last_modified'] = None
 
     store_packages_as_file(tracked_packages,server)
 
@@ -346,8 +368,10 @@ def get_number_of_rows(site,resource_id,API_key=None):
         count = results_dict['total']
         pause()
     except:
+        print("get_number_of_rows threw an exception. Returning 'None'.")
         return None
 
+    print("  get_number_of_rows: count = {}".format(count))
     return count
 
 def get_schema(site,resource_id,API_key=None):
