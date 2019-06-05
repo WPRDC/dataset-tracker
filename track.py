@@ -271,12 +271,10 @@ def store_resources_as_file(rs,server,field_names_seed=None):
 
         if 'last_modified' in r:
             r_last_modified = r['last_modified']
-            print("r_last_modified = {}".format(r_last_modified))
             if r_last_modified is not None:
                 try:
                     r_last_modified_date = parser.parse(r_last_modified)
                     last_modified_by_package[package_id].append(r_last_modified_date)
-                    print("added r_last_modified_date: {}".format(r_last_modified_date))
                 except AttributeError:
                     print("Unable to parse {} as a date/datetime.".format(r_last_modified))
 
@@ -305,7 +303,6 @@ def store_resources_as_file(rs,server,field_names_seed=None):
         if p_id in last_modified_by_package:
             most_recent_date = max(last_modified_by_package[p_id])
             tp['resources_last_modified'] = most_recent_date.isoformat()
-            print("tp['resources_last_modified'] = {}".format(tp['resources_last_modified']))
         else:
             tp['resources_last_modified'] = None
 
