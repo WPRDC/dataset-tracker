@@ -724,7 +724,7 @@ def set_resource_parameter(server,resource_id,parameter,value):
         print("Added the '{}' parameter to {} ({}) with a value of {}.".format(parameter,
             u['resource_name'], u['resource_id'], converted_value))
 
-def update(change_log,record,x,live_package,speedmode):
+def update(record,x,live_package,speedmode):
     # record appears to be converted from the JSON file, so its dates need to be parsed,
     # whereas x comes from ckanapi and should be properly typed already.
     assert record['resource_id'] == x['resource_id']
@@ -738,8 +738,8 @@ def update(change_log,record,x,live_package,speedmode):
     modified_record = OrderedDict(record)
     #if not speedmode: # In speed mode, row and column values aren't extracted,
     #    # so it makes no sense to check for growth (or shrinking) of a resource.
-    if 'rows' in record and record['rows'] is not None:
-        modified_record, change_log = check_resource_for_growth(change_log,record,x,modified_record,live_package,now,last_seen)
+    #if 'rows' in record and record['rows'] is not None:
+    #    modified_record, change_log = check_resource_for_growth(change_log,record,x,modified_record,live_package,now,last_seen)
 
     #smart_pprint(modified_record)
 
@@ -768,7 +768,7 @@ def update(change_log,record,x,live_package,speedmode):
     modified_record['format'] = x['format']
     modified_record['tags'] = x['tags']
     modified_record['groups'] = x['groups']
-    return modified_record, change_log
+    return modified_record
 
 def domain(url):
     """Take a URL and return just the domain."""
@@ -1358,7 +1358,6 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
 
 
     ## BEGIN Review all existing resources and look for updates from current_rows ##
-    change_log = {}
     resources_to_relink = []
     modified_resources_lookup = defaultdict(list)
     for datum in old_data:
@@ -1395,7 +1394,17 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         # updated has been found.
             x = current_rows[current_resource_ids.index(old_id)]
             live_package = live_package_lookup[x['resource_id']]
-            modified_datum,change_log = update(change_log,datum,x,live_package,speedmode)
+            try:
+                modified_datum = update(datum,x,live_package,speedmode)
+            except AssertionError:
+                print("datum")
+                smart_pprint(datum)
+                print("x")
+                smart_pprint(x)
+                print("live_package")
+                smart_pprint(live_package)
+                modified_datum = update(datum,x,live_package,speedmode)
+
             modified_datum['active'] = True
             merged.append(modified_datum)
             processed_current_ids.append(old_id)
