@@ -64,7 +64,7 @@ def backup_resource_to_folder(resource_record,destination_folder):
     assert file_path != metadata_file_path
     return [uploaded_file, uploaded_metadata_file]
 
-def create_folder(path):
+def create_folder_if_missing(path):
     if not os.path.exists(path):
         print("Creating {}".format(current_path))
         os.makedirs(current_path)
@@ -80,7 +80,7 @@ def backup_to_disk(resource_record):
     root_folder = BACKUP_PATH
     resource_folder = "{}{}/{}/{}".format(root_folder,'data.wprdc.org',package_id,resource_id)
     destination_folder = "{}/{}/".format(resource_folder,timestamp)
-    create_folder(destination_folder)
+    create_folder_if_missing(destination_folder)
     filepaths = backup_resource_to_folder(resource_record, destination_folder)
     # Update last_backed_up field
 
