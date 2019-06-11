@@ -204,8 +204,8 @@ def load_xs_from_file(server,filepath):
         with open(filepath,'r',encoding='utf-8') as f:
             xs = loads(f.read())
         # Also back up this file, so that any changes can be easily undone.
-        backup_filepath = '/'.join(filepath.split('/')[:-1] + ['backup.json'])
-        shutil.copy(filepath, backup_filepath)
+        json_backup_filepath = '/'.join(filepath.split('/')[:-1] + ['backup.json'])
+        shutil.copy(filepath, json_backup_filepath)
 
         return xs
     else:
