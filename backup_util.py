@@ -66,8 +66,8 @@ def backup_resource_to_folder(resource_record,destination_folder):
 
 def create_folder_if_missing(path):
     if not os.path.exists(path):
-        print("Creating {}".format(current_path))
-        os.makedirs(current_path)
+        print("Creating {}".format(path))
+        os.makedirs(path)
 
 def backup_to_disk(resource_record):
     # Check whether last_backed_up < resource_record['last_modified'] (the parameter that I think indicates when the resource was last modified)
