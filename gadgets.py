@@ -5,6 +5,55 @@ try:
 except:
     from urllib.parse import urlparse # Python 3 renamed urlparse.
 
+
+def get_package_parameter(site,package_id,parameter=None,API_key=None):
+    """Gets a CKAN package parameter. If no parameter is specified, all metadata
+    for that package is returned."""
+    # Some package parameters you can fetch from the WPRDC with
+    # this function are:
+    # 'geographic_unit', 'owner_org', 'maintainer', 'data_steward_email',
+    # 'relationships_as_object', 'access_level_comment',
+    # 'frequency_publishing', 'maintainer_email', 'num_tags', 'id',
+    # 'metadata_created', 'group', 'metadata_modified', 'author',
+    # 'author_email', 'state', 'version', 'department', 'license_id',
+    # 'type', 'resources', 'num_resources', 'data_steward_name', 'tags',
+    # 'title', 'frequency_data_change', 'private', 'groups',
+    # 'creator_user_id', 'relationships_as_subject', 'data_notes',
+    # 'name', 'isopen', 'url', 'notes', 'license_title',
+    # 'temporal_coverage', 'related_documents', 'license_url',
+    # 'organization', 'revision_id'
+    ckan = ckanapi.RemoteCKAN(site, apikey=API_key)
+    metadata = ckan.action.package_show(id=package_id)
+    if parameter is None:
+        return metadata
+    else:
+        if parameter in metadata:
+            return metadata[parameter]
+        else:
+            return None
+
+def set_package_parameters_to_values(site,package_id,parameters,new_values,API_key,mute=False):
+    ckan = ckanapi.RemoteCKAN(site, apikey=API_key)
+    original_values = [get_package_parameter(site,package_id,p,API_key) for p in parameters]
+    payload = {}
+    payload['id'] = package_id
+    for parameter,new_value in zip(parameters,new_values):
+        payload[parameter] = new_value
+    results = ckan.action.package_patch(**payload)
+    if not mute:
+        print("Changed the parameters {} from {} to {} on package {}".format(parameters, original_values, new_values, package_id))
+
+def add_tag(site, API_key, package, tag='_harvested'):
+    """Check that the package has the desired tag. If not, add it."""
+    tag_dicts = package['tags']
+    tags = [td['name'] for td in tag_dicts]
+    if tag not in tags:
+        ckan = ckanapi.RemoteCKAN(site, apikey=API_key)
+        new_tag_dict = {'name': tag}
+        tag_dicts.append(new_tag_dict)
+        set_package_parameters_to_values(site,package['id'],['tags'],[tag_dicts],API_key,True)
+        return True
+
 def write_to_csv(filename,list_of_dicts,keys):
     with open(filename, 'w') as output_file:
         dict_writer = csv.DictWriter(output_file, keys, extrasaction='ignore', lineterminator='\n')
