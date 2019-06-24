@@ -1731,6 +1731,7 @@ def tag_harvested_datasets():
             if add_tag(site, API_key, package, '_harvested'):
                 added += 1
                 pause(0.5)
+                print("Tagged {}".format(package['title']))
     print("Tagged {} more datasets as '_harvested'.".format(added))
 
 server = "test-production"
