@@ -1404,7 +1404,8 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 smart_pprint(x)
                 print("live_package")
                 smart_pprint(live_package)
-                modified_datum = update(datum,x,live_package,speedmode)
+                if datum['resource_id'] == x['resource_id'] and datum['package_id'] != x['package_id']:
+                    raise ValueError("A resource has hopped from one package to another because the harvester gets confused when two datasets have the same guid set in the extras field. It’s something set by the harvester to know if it should copy over the resource IDs so they persist on the next harvest job.")
 
             modified_datum['active'] = True
             merged.append(modified_datum)
