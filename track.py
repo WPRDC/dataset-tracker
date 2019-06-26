@@ -1405,7 +1405,13 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
                 print("live_package")
                 smart_pprint(live_package)
                 if datum['resource_id'] == x['resource_id'] and datum['package_id'] != x['package_id']:
-                    raise ValueError("A resource has hopped from one package to another because the harvester gets confused when two datasets have the same guid set in the extras field. It’s something set by the harvester to know if it should copy over the resource IDs so they persist on the next harvest job.")
+                    raise ValueError("A resource has hopped from one package to another because the harvester gets confused when two datasets have the same guid set in the extras field. It’s something set by the harvester to know if it should copy over the resource IDs so they persist on the next harvest job. Recommended solutions: SHORT TERM: Prepend a minus sign to the affected resource IDs in resource.json. LONG TERM: Eliminate the Harvester.")
+                    # Actually, this happened in another instance where there seemed to be no 'guid' field in the extras metadata field from which the resources were snatched.
+                    # The package that lost the resources had been made private because of other Harvester/ArcGIS shenanigans. The only apparent commonality
+                    # was that both had the same donwload_url, though the match might have been made on some other feature.
+
+                    # The way I handled this last time was to prepend a minus sign in front of the affected resource IDs.
+                    # If this happens again, that step could be automated.
 
             modified_datum['active'] = True
             merged.append(modified_datum)
