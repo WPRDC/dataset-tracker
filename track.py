@@ -1149,7 +1149,10 @@ def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speed
 
     for p in packages:
         if p['id'] not in old_package_ids:
-            print("{} ({}) has not been tracked yet.".format(p['title'],p['id']))
+            print("{} ({}) has not been tracked yet (in resources-<server>.json, though it might be in the packages-<server>.json file).".format(p['title'],p['id']))
+            # Essentially the above parenthetical statement means that you need to
+            # delete a package and all its resources from both files to trigger
+            # "New Dataset" alerts.
 
     for p in packages:
         for r in p['resources']:
