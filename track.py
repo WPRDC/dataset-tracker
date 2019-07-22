@@ -1454,14 +1454,15 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
         if p_id not in old_package_ids:
             new_packages.append(p)
 
-    for np in new_packages:
-        if 'package_name' not in np:
-            print("This package has no 'package_name' field:")
-            try:
-                smart_pprint(np) # pprint sometimes fails, like if there's unprintable Unicode in the package description.
-            except UnicodeEncodeError:
-                for k,v in np.items():
-                    print("{}: {}".format(utf8_encode(k),utf8_encode(v))) # This also throws UnicodeEncodeErrors sometimes, so maybe it's a bad fallback.
+    # Commented out the stuff below since it so often causes problems with new packages.
+    #for np in new_packages:
+    #    if 'package_name' not in np:
+    #        print("This package has no 'package_name' field:")
+    #        try:
+    #            smart_pprint(np) # pprint sometimes fails, like if there's unprintable Unicode in the package description.
+    #        except UnicodeEncodeError:
+    #            for k,v in np.items():
+    #                print("{}: {}".format(utf8_encode(k),utf8_encode(v))) # This also throws UnicodeEncodeErrors sometimes, so maybe it's a bad fallback.
 
     print("new_packages = {}".format([np['package_name'] for np in new_packages if 'package_name' in np]))
 
