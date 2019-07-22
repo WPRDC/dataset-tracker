@@ -1453,21 +1453,25 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     old_package_ids = [p['package_id'] for p in packages_from_file]
 
     new_packages = []
-    for p_id,p in live_package_by_id.items():
+    for p_id, p in live_package_by_id.items():
         if p_id not in old_package_ids:
             new_packages.append(p)
+            package_url_path = "/dataset/" + p['name']
+            package_url = site + package_url_path
+            msg = "New dataset found: {} located at {}.".format(p['title'] if 'title' in p else '(package title not found)', package_url)
+            print(msg)
+            if alerts_on:
+                send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':koolaid:')
 
     # Commented out the stuff below since it so often causes problems with new packages.
     #for np in new_packages:
-    #    if 'package_name' not in np:
-    #        print("This package has no 'package_name' field:")
+    #    if 'title' not in np:
+    #        print("This package has no 'title' field:")
     #        try:
     #            smart_pprint(np) # pprint sometimes fails, like if there's unprintable Unicode in the package description.
     #        except UnicodeEncodeError:
     #            for k,v in np.items():
     #                print("{}: {}".format(utf8_encode(k),utf8_encode(v))) # This also throws UnicodeEncodeErrors sometimes, so maybe it's a bad fallback.
-
-    print("new_packages = {}".format([np['package_name'] for np in new_packages if 'package_name' in np]))
 
     ## END Check for new packages ##
 
