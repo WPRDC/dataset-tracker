@@ -1461,7 +1461,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
             msg = "New dataset found: {} located at {}.".format(p['title'] if 'title' in p else '(package title not found)', package_url)
             print(msg)
             if alerts_on:
-                send_to_slack(msg,username='dataset-tracker',channel='@david',icon=':koolaid:')
+                send_to_slack(msg,username='dataset-tracker',channel='#new-datasets',icon=':rocket:')
 
     # Commented out the stuff below since it so often causes problems with new packages.
     #for np in new_packages:
