@@ -49,6 +49,7 @@ class ResourceTrackingSchema(pl.BaseSchema):
     size = fields.Integer(allow_none=True)
     last_sized = fields.DateTime(allow_none=True)
     _format = fields.String(dump_to='format',allow_none=False)
+    mimetype = fields.String(dump_to='mimetype', allow_none=True)
     loading_method = fields.String(allow_none=True)
     tags = fields.String(allow_none=True)
     groups = fields.String(allow_none=True)
@@ -599,6 +600,7 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
         ('last_sized',now if sizing_attempted else None),
         ('loading_method',loading_method),
         ('format',resource['format']),
+        ('mimetype',resource['mimetype']),
         ('tags',tags_string),
         ('groups',groups_string)]
 
@@ -767,6 +769,7 @@ def update(record,x,live_package,speedmode):
     # Only update the 'last_sized' field if a new (non-None) value has been obtained.
     modified_record['loading_method'] = x['loading_method']
     modified_record['format'] = x['format']
+    modified_record['mimetype'] = x['mimetype']
     modified_record['tags'] = x['tags']
     modified_record['groups'] = x['groups']
     return modified_record
