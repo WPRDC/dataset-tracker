@@ -917,6 +917,16 @@ def is_harvested_package(raw_package):
         return True
     return re.search('this dataset is harvested on a weekly basis',raw_package['notes']) is not None
 
+def check_for_inactive_datastores():
+    ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
+    # the next line will only return non-private packages.
+    packages = ckan.action.current_package_list_with_resources(limit=999999)
+    for p in packages:
+        for r in p['resources']:
+            if re.search('datastore/dump', r['url']) is not None:
+                if not r['datastore_active']:
+                    print(f"{r['name']} in {p['title']} with resource ID {r['id']} has no datastore.")
+
 def check_live_licenses():
     # 1) We only care about whether active resources have licenses.
     # 2) It's a pain to go back and deal with the inactive resources for which license information has not been tracked.
@@ -1132,6 +1142,7 @@ def check_all(tracks=None):
     find_empty_tables(tracks,False)
     check_for_partial_uploads(tracks)
     find_duplicate_packages(True,tracks,False)
+    check_for_inactive_datastores()
 
 def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speedmode=False,return_data=False,sizing_override=False):
 ### Think through what else needs to be moved around to make this self-contained and
