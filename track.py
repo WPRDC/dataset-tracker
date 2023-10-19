@@ -942,7 +942,7 @@ def check_live_licenses():
     print("Distribution of licenses by package:")
     smart_pprint(dict(license_counts))
     if len(items) > 0:
-        msg = "{} without licenses found: ".format(pluralize('package',items), ", ".join(items))
+        msg = "{} without licenses found: ".format(pluralize('package',items), ", ".join(items)).encode('utf-8')
         print(msg)
         # These tend to be harvested packages.
         nonharvested = []
@@ -1520,6 +1520,7 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
 
                 current_package_ids.append(current_row['package_id'])
                 msg = "dataset-tracker found an entirely new resource: " + printable
+                msg = msg.encode('utf-8')
                 print(msg)
             merged.append(current_row) # Whether it's reharvested or not, it's
             # got to be added as a resource to track, so that the resource IDs
