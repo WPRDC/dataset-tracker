@@ -49,6 +49,7 @@ class ResourceTrackingSchema(pl.BaseSchema):
     size = fields.Integer(allow_none=True)
     last_sized = fields.DateTime(allow_none=True)
     _format = fields.String(dump_to='format',allow_none=False)
+    mimetype = fields.String(dump_to='mimetype', allow_none=True)
     loading_method = fields.String(allow_none=True)
     tags = fields.String(allow_none=True)
     groups = fields.String(allow_none=True)
@@ -599,6 +600,7 @@ def extract_features(package,resource,old_tracks,speedmode_seed=False,sizing_ove
         ('last_sized',now if sizing_attempted else None),
         ('loading_method',loading_method),
         ('format',resource['format']),
+        ('mimetype',resource['mimetype']),
         ('tags',tags_string),
         ('groups',groups_string)]
 
@@ -767,6 +769,7 @@ def update(record,x,live_package,speedmode):
     # Only update the 'last_sized' field if a new (non-None) value has been obtained.
     modified_record['loading_method'] = x['loading_method']
     modified_record['format'] = x['format']
+    modified_record['mimetype'] = x['mimetype']
     modified_record['tags'] = x['tags']
     modified_record['groups'] = x['groups']
     return modified_record
@@ -914,6 +917,16 @@ def is_harvested_package(raw_package):
         return True
     return re.search('this dataset is harvested on a weekly basis',raw_package['notes']) is not None
 
+def check_for_inactive_datastores():
+    ckan = ckanapi.RemoteCKAN(site) # Without specifying the apikey field value,
+    # the next line will only return non-private packages.
+    packages = ckan.action.current_package_list_with_resources(limit=999999)
+    for p in packages:
+        for r in p['resources']:
+            if re.search('datastore/dump', r['url']) is not None:
+                if not r['datastore_active']:
+                    print(f"{r['name']} in {p['title']} with resource ID {r['id']} has no datastore.")
+
 def check_live_licenses():
     # 1) We only care about whether active resources have licenses.
     # 2) It's a pain to go back and deal with the inactive resources for which license information has not been tracked.
@@ -972,20 +985,25 @@ def check_formats(tracks=None):
         msg = "{} with non-standard formats found: {}".format(pluralize("resource",items), ", ".join(items))
         print(msg)
 
-def check_links(tracks=None):
+def check_links(resource_name=None, tracks=None):
     if tracks is None:
         tracks = load_resources_from_file(server)
     items = []
     last_domain = ''
     checked_urls = {}
     for k,r in enumerate(tracks):
+        if 'active' not in r or not r['active']: # Only check active resources.
+            continue
+        if resource_name is not None:
+            if r['resource_name'] != resource_name:
+                continue
         if 'download_url' in r and r['download_url'] is not None and domain(r['download_url']) != domain(site) and r['download_url'] != 'http://#':
             durl = r['download_url']
             if durl not in checked_urls.keys():
                 if last_domain == domain(durl):
-                    time.sleep(0.1)
+                    time.sleep(10)
                 else:
-                    time.sleep(0.01)
+                    time.sleep(0.1)
 
                 try:
                     response = requests.head(durl,timeout=60)
@@ -994,7 +1012,9 @@ def check_links(tracks=None):
                     items.append("Unable to get the head from {} for {}".format(durl,r['resource_name']))
 
                 # 405 Method Not Allowed (the server refuses to respond to a HEAD request.)
-                if response.status_code == 405:
+                # 202 Accepted (This is happening sometimes).
+                if response.status_code in [405, 202]:
+                    print(f"Got a {response.status_code} response... Trying to get the file.")
                     try:
                         response = requests.get(durl,timeout=60)
                     except requests.exceptions.Timeout:
@@ -1005,7 +1025,8 @@ def check_links(tracks=None):
                 r['download_link_status'] = response.status_code
                 last_domain = domain(durl)
                 if response.status_code != 200:
-                    print("   {}: {}".format(durl, response.status_code))
+                    print(f"{response.status_code} Error for {r['package_name']}: {r['resource_name']}")
+                    print(f"     {durl}")
                 #if response.status_code == 308: # 308 was seen when running check_links many times
                 ## in a row (from the ArcGIS servers) but it has not been encountered on the most
                 ## recent test run, so this code will be commented out for now.
@@ -1116,11 +1137,12 @@ def check_all(tracks=None):
     list_unnamed(tracks)
     check_all_unknown_sizes(tracks)
     check_formats(tracks)
-    check_links(tracks)
+    check_links(None, tracks)
     check_live_licenses()
     find_empty_tables(tracks,False)
     check_for_partial_uploads(tracks)
     find_duplicate_packages(True,tracks,False)
+    check_for_inactive_datastores()
 
 def fetch_live_resources(site,API_key,server,speedmode,sizing_override):#:(speedmode=False,return_data=False,sizing_override=False):
 ### Think through what else needs to be moved around to make this self-contained and
