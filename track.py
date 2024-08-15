@@ -12,6 +12,7 @@ from parameters.local_parameters import SETTINGS_FILE, PATH, BACKUP_DATA
 from notify import send_to_slack
 from backup_util import backup_to_disk
 from gadgets import add_tag
+from icecream import ic
 
 #abspath = os.path.abspath(__file__)
 #dname = os.path.dirname(abspath)
@@ -20,101 +21,105 @@ from gadgets import add_tag
 ## If this path doesn't exist, create it.
 #if not os.path.exists(local_path):
 #    os.makedirs(local_path)
-sys.path.insert(0, '/Users/drw/WPRDC/etl-dev/wprdc-etl') # A path that we need to import code from
-import pipeline as pl
+sys.path.insert(0, '/home/david/wprdc-etl')
+sys.path.insert(0, '/Users/drw/WPRDC/rocket-etl/engine/wprdc_etl') # A path that we need to import code from
+try:
+    import pipeline as pl
+except:
+    print("Unable to run pipeline functions (but they seem to never get used).")
+else:
+    from marshmallow import fields, pre_load, post_load
 
-from marshmallow import fields, pre_load, post_load
-
-class ResourceTrackingSchema(pl.BaseSchema):
-    resource_id = fields.String(allow_none=False)
-    resource_name = fields.String(allow_none=False)
-    package_id = fields.String(allow_none=False)
-    package_name = fields.String(allow_none=False)
-    linking_code = fields.String(allow_none=False)
-    organization =  fields.String(allow_none=False)
-    resource_url = fields.String(allow_none=False)
-    package_url = fields.String(allow_none=False)
-    download_url = fields.String(allow_none=True) # 'url' parameter of the resource.
-    download_link_status = fields.String(allow_none=True)
-    created = fields.DateTime(allow_none=True)
-    first_published = fields.DateTime(allow_none=True)
-    first_seen = fields.DateTime(default=datetime.now().isoformat(),allow_none=True)
-    last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
-    total_days_seen = fields.Integer(allow_none=True)
-    last_modified = fields.DateTime(allow_none=True)
-    time_of_last_size_change = fields.DateTime(allow_none=True)
-    active = fields.Boolean(allow_none=True)
-    rows = fields.Integer(allow_none=True)
-    columns = fields.Integer(allow_none=True)
-    size = fields.Integer(allow_none=True)
-    last_sized = fields.DateTime(allow_none=True)
-    _format = fields.String(dump_to='format',allow_none=False)
-    mimetype = fields.String(dump_to='mimetype', allow_none=True)
-    loading_method = fields.String(allow_none=True)
-    tags = fields.String(allow_none=True)
-    groups = fields.String(allow_none=True)
+    class ResourceTrackingSchema(pl.BaseSchema):
+        resource_id = fields.String(allow_none=False)
+        resource_name = fields.String(allow_none=False)
+        package_id = fields.String(allow_none=False)
+        package_name = fields.String(allow_none=False)
+        linking_code = fields.String(allow_none=False)
+        organization =  fields.String(allow_none=False)
+        resource_url = fields.String(allow_none=False)
+        package_url = fields.String(allow_none=False)
+        download_url = fields.String(allow_none=True) # 'url' parameter of the resource.
+        download_link_status = fields.String(allow_none=True)
+        created = fields.DateTime(allow_none=True)
+        first_published = fields.DateTime(allow_none=True)
+        first_seen = fields.DateTime(default=datetime.now().isoformat(),allow_none=True)
+        last_seen = fields.DateTime(dump_only=True,dump_to='last_seen',default=datetime.now().isoformat())
+        total_days_seen = fields.Integer(allow_none=True)
+        last_modified = fields.DateTime(allow_none=True)
+        time_of_last_size_change = fields.DateTime(allow_none=True)
+        active = fields.Boolean(allow_none=True)
+        rows = fields.Integer(allow_none=True)
+        columns = fields.Integer(allow_none=True)
+        size = fields.Integer(allow_none=True)
+        last_sized = fields.DateTime(allow_none=True)
+        _format = fields.String(dump_to='format',allow_none=False)
+        mimetype = fields.String(dump_to='mimetype', allow_none=True)
+        loading_method = fields.String(allow_none=True)
+        tags = fields.String(allow_none=True)
+        groups = fields.String(allow_none=True)
 
 
-    # Never let any of the key fields have None values. It's just asking for
-    # multiplicity problems on upsert.
-    #as_of = fields.DateTime(dump_only=True,dump_to='as_of',default=datetime.datetime.now().isoformat())
+        # Never let any of the key fields have None values. It's just asking for
+        # multiplicity problems on upsert.
+        #as_of = fields.DateTime(dump_only=True,dump_to='as_of',default=datetime.datetime.now().isoformat())
 
-    # [Note that since this script is taking data from CSV files, there should be no
-    # columns with None values. It should all be instances like [value], [value],, [value],...
-    # where the missing value starts as as a zero-length string, which this script
-    # is then responsible for converting into something more appropriate.
+        # [Note that since this script is taking data from CSV files, there should be no
+        # columns with None values. It should all be instances like [value], [value],, [value],...
+        # where the missing value starts as as a zero-length string, which this script
+        # is then responsible for converting into something more appropriate.
 
-    class Meta:
-        ordered = True
+        class Meta:
+            ordered = True
 
-    # From the Marshmallow documentation:
-    #   Warning: The invocation order of decorated methods of the same
-    #   type is not guaranteed. If you need to guarantee order of different
-    #   processing steps, you should put them in the same processing method.
-    #@pre_load
-    #def fix_date(self, data):
-    #    data['first_published'] = datetime.strptime(data['first_published'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
-    #    data['first_seen'] = datetime.strptime(data['first_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
-    #    data['last_seen'] = datetime.strptime(data['last_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
-    @pre_load
-    def fix_name(self, data):
-        if data['resource_name'] is None:
-            data['resource_name'] = "Unnamed resource"
+        # From the Marshmallow documentation:
+        #   Warning: The invocation order of decorated methods of the same
+        #   type is not guaranteed. If you need to guarantee order of different
+        #   processing steps, you should put them in the same processing method.
+        #@pre_load
+        #def fix_date(self, data):
+        #    data['first_published'] = datetime.strptime(data['first_published'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
+        #    data['first_seen'] = datetime.strptime(data['first_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
+        #    data['last_seen'] = datetime.strptime(data['last_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
+        @pre_load
+        def fix_name(self, data):
+            if data['resource_name'] is None:
+                data['resource_name'] = "Unnamed resource"
 
-class PackageTrackingSchema(pl.BaseSchema):
-    package_id = fields.String(allow_none=False)
-    package_name = fields.String(allow_none=False)
-    organization =  fields.String(allow_none=False)
-    package_url = fields.String(allow_none=False)
-    active = fields.Boolean(allow_none=True)
-    tags = fields.String(allow_none=True)
-    groups = fields.String(allow_none=True)
-    resources_last_modified = fields.String(allow_none=True)
-    # Never let any of the key fields have None values. It's just asking for
-    # multiplicity problems on upsert.
-    #as_of = fields.DateTime(dump_only=True,dump_to='as_of',default=datetime.datetime.now().isoformat())
+    class PackageTrackingSchema(pl.BaseSchema):
+        package_id = fields.String(allow_none=False)
+        package_name = fields.String(allow_none=False)
+        organization =  fields.String(allow_none=False)
+        package_url = fields.String(allow_none=False)
+        active = fields.Boolean(allow_none=True)
+        tags = fields.String(allow_none=True)
+        groups = fields.String(allow_none=True)
+        resources_last_modified = fields.String(allow_none=True)
+        # Never let any of the key fields have None values. It's just asking for
+        # multiplicity problems on upsert.
+        #as_of = fields.DateTime(dump_only=True,dump_to='as_of',default=datetime.datetime.now().isoformat())
 
-    # [Note that since this script is taking data from CSV files, there should be no
-    # columns with None values. It should all be instances like [value], [value],, [value],...
-    # where the missing value starts as as a zero-length string, which this script
-    # is then responsible for converting into something more appropriate.
+        # [Note that since this script is taking data from CSV files, there should be no
+        # columns with None values. It should all be instances like [value], [value],, [value],...
+        # where the missing value starts as as a zero-length string, which this script
+        # is then responsible for converting into something more appropriate.
 
-    class Meta:
-        ordered = True
+        class Meta:
+            ordered = True
 
-    # From the Marshmallow documentation:
-    #   Warning: The invocation order of decorated methods of the same
-    #   type is not guaranteed. If you need to guarantee order of different
-    #   processing steps, you should put them in the same processing method.
-    #@pre_load
-    #def fix_date(self, data):
-    #    data['first_published'] = datetime.strptime(data['first_published'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
-    #    data['first_seen'] = datetime.strptime(data['first_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
-    #    data['last_seen'] = datetime.strptime(data['last_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
-    @pre_load
-    def fix_name(self, data):
-        if data['resource_name'] is None:
-            data['resource_name'] = "Unnamed resource"
+        # From the Marshmallow documentation:
+        #   Warning: The invocation order of decorated methods of the same
+        #   type is not guaranteed. If you need to guarantee order of different
+        #   processing steps, you should put them in the same processing method.
+        #@pre_load
+        #def fix_date(self, data):
+        #    data['first_published'] = datetime.strptime(data['first_published'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
+        #    data['first_seen'] = datetime.strptime(data['first_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
+        #    data['last_seen'] = datetime.strptime(data['last_seen'], "%Y-%m-%dT%H:%M:%S.%f").isoformat()
+        @pre_load
+        def fix_name(self, data):
+            if data['resource_name'] is None:
+                data['resource_name'] = "Unnamed resource"
 
 
 period = {'Annually': timedelta(days = 366),
@@ -436,12 +441,16 @@ def size_estimate(resource,old_tracks,force_sizing=False):
         return None, True
 
     if url == 'http://#':   # Handle local convention for
-        return None, True  # disabling downloading of big
+        return None, True   # disabling downloading of big
                             # tables in the datastore.
 
     try:
         response = requests.head(url,timeout=60)
         pause()
+    except requests.exceptions.MissingSchema:
+        print(resource)
+        ic(url)
+        raise
     except requests.exceptions.Timeout:
         print("Timed out while getting the head from {}".format(url))
         return None, True
