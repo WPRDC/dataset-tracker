@@ -171,7 +171,7 @@ def smart_pprint(x):
         string_representation = x.__str__
         ascii_string = ''
         ascii_set = '~1234567890-=qwertyuiop[]\\asdfghjkl;zxcvbnm,./~!@$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:"ZXCVBNM<>?'
-        ascii_set += '\#'
+        ascii_set += """#"""
         ascii_set += "'"
         for c in string_representation:
             if c in ascii_set:
