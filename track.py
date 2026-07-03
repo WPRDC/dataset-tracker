@@ -441,9 +441,14 @@ def size_estimate(resource,old_tracks,force_sizing=False):
         return None, True
 
     if url == 'http://#':   # Handle local convention for
-        return None, True   # disabling downloading of big
+        return None, False   # disabling downloading of big
                             # tables in the datastore.
 
+    if url in [None, ''] or url.split('://')[0] not in ['http', 'https']:
+        from pprint import pprint
+        pprint(resource)
+        print(f"The URL for {r_name} ({url}) is bogus.")
+        return None, None
     try:
         response = requests.head(url,timeout=60)
         pause()
@@ -1600,13 +1605,13 @@ def inventory(alerts_on=True,speedmode=False,return_data=False,sizing_override=F
     if return_data:
         return merged
 
-def force_sizing():
+def force_sizing(mute_alerts=False):
     # This script prefers speedmode, since obtaining the dimensions for all the data tables and
     # sizes for some of the files takes (for some reason) routinely over half an hour (maybe one
     # request tends to hang for a long time), whereas speedmode requires only one request.
     # But sometimes we need to slowly go through and update a bunch of sizes. This is the
     # function that does that.
-    inventory(False,False,False,True)
+    inventory(mute_alerts, False, False, True)
 
 def upload():
     # Upload resource tracking data to a new CKAN resource under the given package ID.
